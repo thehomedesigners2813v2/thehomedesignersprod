@@ -62,8 +62,9 @@ Deno.serve(async (req: Request) => {
     const payload: BillEmailPayload = await req.json();
 
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+    const localSupabase = !Deno.env.get("SUPABASE_URL")?.startsWith("https://");
 
-    if (!RESEND_API_KEY) {
+    if (!RESEND_API_KEY && !localSupabase) {
       throw new Error("RESEND_API_KEY is not configured in Edge Function secrets.");
     }
 
@@ -203,29 +204,53 @@ Deno.serve(async (req: Request) => {
 </body>
 </html>`;
 
-    const res = await fetch("https://api.resend.com/emails", {
+    if (RESEND_API_KEY) {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${RESEND_API_KEY}`,
+        },
+        body: JSON.stringify({
+          from: "The Home Designers <orders@thehomedesigners.com>",
+          to: [payload.customerEmail],
+          subject: `Bill ${payload.billNumber} - ${payload.projectName}`,
+          html: emailBody,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        console.error("Resend API error:", JSON.stringify(data));
+        throw new Error(`Resend API error: ${JSON.stringify(data)}`);
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, message: "Bill email sent successfully", emailId: data.id }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const mailpitBase = Deno.env.get("LOCAL_MAILPIT_URL") || "http://host.docker.internal:54324";
+    const mailpitResponse = await fetch(`${mailpitBase}/api/v1/send`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: "The Home Designers <orders@thehomedesigners.com>",
-        to: [payload.customerEmail],
-        subject: `Bill ${payload.billNumber} - ${payload.projectName}`,
-        html: emailBody,
+        From: { Email: "orders@thehomedesigners.com", Name: "The Home Designers" },
+        To: [{ Email: payload.customerEmail, Name: payload.customerName || payload.customerEmail }],
+        Subject: `Bill ${payload.billNumber} - ${payload.projectName}`,
+        HTML: emailBody,
       }),
     });
 
-    const data = await res.json();
-
-    if (!res.ok) {
-      console.error("Resend API error:", JSON.stringify(data));
-      throw new Error(`Resend API error: ${JSON.stringify(data)}`);
+    if (!mailpitResponse.ok) {
+      const mailpitError = await mailpitResponse.text();
+      throw new Error(`Local email delivery failed: ${mailpitError}`);
     }
 
     return new Response(
-      JSON.stringify({ success: true, message: "Bill email sent successfully", emailId: data.id }),
+      JSON.stringify({ success: true, message: "Bill email sent to the local mailbox", local: true }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

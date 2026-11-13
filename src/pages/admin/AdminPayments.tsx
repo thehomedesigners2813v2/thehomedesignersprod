@@ -24,6 +24,7 @@ const PURPOSE_LABELS: Record<string, string> = {
   ai_subscription: 'AI plan',
   wallpaper_order: '3D wallpaper order',
   quote_advance: 'Quotation advance',
+  project_payment: 'Project payment',
 };
 
 const STATUS_STYLES: Record<string, string> = {

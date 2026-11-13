@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-export type PaymentPurpose = 'designer_subscription' | 'ai_subscription' | 'wallpaper_order' | 'quote_advance';
+export type PaymentPurpose = 'designer_subscription' | 'ai_subscription' | 'wallpaper_order' | 'quote_advance' | 'project_payment';
 export type PaymentMethod = 'razorpay' | 'upi';
 
 export interface CreatedPayment {

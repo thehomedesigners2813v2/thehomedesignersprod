@@ -25,6 +25,9 @@ verify_jwt = true
 [functions.send-bill-email]
 verify_jwt = true
 
+[functions.send-payment-request-email]
+verify_jwt = true
+
 [functions.ai-quotation-create]
 verify_jwt = true
 

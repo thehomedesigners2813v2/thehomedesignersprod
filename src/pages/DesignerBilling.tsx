@@ -28,6 +28,7 @@ import { useDesignerProfile } from '../hooks/useDesignerProfile';
 import { supabase } from '../lib/supabase';
 import { generateBillPdf } from '../utils/generateBillPdf';
 import VoiceItemInput, { VoiceAddedItem } from '../components/VoiceItemInput';
+import BillPaymentsSection from '../components/BillPaymentsSection';
 
 interface BillItem {
   id?: string;
@@ -600,8 +601,8 @@ const saveBill = async (sendToCustomer = false) => {
                 Project Bill
               </h1>
               <p className="text-sm text-gray-500 mt-0.5">
-                {bill?.bill_number} &middot; {bill?.status === 'sent' ? 'Sent to Customer' : 'Draft'}
-                {bill?.current_version ? ` &middot; v${bill.current_version}` : ''}
+                {bill?.bill_number} · {bill?.status === 'sent' ? 'Sent to Customer' : 'Draft'}
+                {bill?.current_version ? ` · v${bill.current_version}` : ''}
               </p>
             </div>
           </div>
@@ -666,16 +667,14 @@ const saveBill = async (sendToCustomer = false) => {
             </button>
 
             {!viewingVersion && (
-              <> onClick={() => saveBill(true)}
-                <button
-                  onClick={() => saveBill(true)}
-                  disabled={saving}
-                  className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors flex items-center gap-2 text-sm font-medium disabled:opacity-50"
-                >
-                  <Send className="w-4 h-4" />
-                  Send to Customer
-                </button>
-              </>
+              <button
+                onClick={() => saveBill(true)}
+                disabled={saving}
+                className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors flex items-center gap-2 text-sm font-medium disabled:opacity-50"
+              >
+                <Send className="w-4 h-4" />
+                Send to Customer
+              </button>
             )}
           </div>
         </div>
@@ -687,7 +686,7 @@ const saveBill = async (sendToCustomer = false) => {
               <Eye className="w-4 h-4" />
               <span className="font-medium">Viewing Version {selectedVersion.version_number}</span>
               <span className="text-amber-600">
-                &middot; {new Date(selectedVersion.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                · {new Date(selectedVersion.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
             <button
@@ -737,8 +736,8 @@ const saveBill = async (sendToCustomer = false) => {
             </div>
             <div className="mt-3 pt-3 border-t border-gray-100">
               <p className="text-sm text-gray-600">
-                <span className="font-medium">{project.project_name}</span> &middot; {project.property_type}
-                {project.project_area && ` &middot; ${project.project_area}`}
+                <span className="font-medium">{project.project_name}</span> · {project.property_type}
+                {project.project_area && ` · ${project.project_area}`}
               </p>
             </div>
           </div>
@@ -1102,6 +1101,18 @@ const saveBill = async (sendToCustomer = false) => {
             </div>
           </div>
         </div>
+
+        {bill && (
+          <div className="mt-6">
+            <BillPaymentsSection
+              projectId={bill.project_id}
+              billId={bill.id}
+              billTotal={Number(bill.total_amount)}
+              editorTotal={displayTotal}
+              mode="designer"
+            />
+          </div>
+        )}
 
         {/* Bottom Actions (mobile) */}
         {!viewingVersion && (

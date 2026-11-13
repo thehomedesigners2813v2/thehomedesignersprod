@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, AlertCircle, Loader2, ThumbsUp, ThumbsDown, CreditCard as Edit3, MessageSquare, X, IndianRupee, ShieldCheck, Info, RotateCcw, Ban } from 'lucide-react';
+import { CheckCircle, AlertCircle, Loader2, ThumbsUp, ThumbsDown, CreditCard as Edit3, MessageSquare, X, IndianRupee, ShieldCheck, Info, RotateCcw } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import QuoteMessagingPanel from './QuoteMessagingPanel';
@@ -38,8 +38,25 @@ const QuoteActionsPanel: React.FC<QuoteActionsPanelProps> = ({ quote, onRefresh 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-
   const [accepting, setAccepting] = useState(false);
+
+  const [paymentOrderStatus, setPaymentOrderStatus] = useState<string | null>(null);
+  const [paymentRefreshKey, setPaymentRefreshKey] = useState(0);
+
+  useEffect(() => {
+    if (!user || !quote?.id) return;
+    supabase
+      .from('payment_orders')
+      .select('status')
+      .eq('purpose', 'quote_advance')
+      .eq('reference_id', quote.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }: { data: { status?: string } | null }) => {
+        setPaymentOrderStatus(data?.status || null);
+      });
+  }, [user, quote?.id, quote?.status, quote?.payment_status, paymentRefreshKey]);
 
   // Configured advance payment config (percent + min + terms)
   const [advanceConfig, setAdvanceConfig] = useState<{ percent: number; min_amount: number; terms: string }>({ percent: 10, min_amount: 0, terms: '' });
@@ -75,13 +92,15 @@ const QuoteActionsPanel: React.FC<QuoteActionsPanelProps> = ({ quote, onRefresh 
   const paymentStatus = quote.payment_status || 'pending';
   const revisionRound = quote.revision_round || 0;
   const isConfirmed = quoteStatus === 'accepted' && paymentStatus === 'verified';
-  const isAcceptedPendingPayment = quoteStatus === 'accepted' && paymentStatus === 'pending' && quote.customer_accepted;
+  const paymentInitiated = paymentOrderStatus === 'pending';
+  const paymentAwaitingReview = paymentOrderStatus === 'awaiting_review';
+  const paymentFailed = paymentOrderStatus === 'failed' || paymentOrderStatus === 'rejected';
   const isRejected = quoteStatus === 'rejected';
   const isChangesRequested = quoteStatus === 'changes_requested';
   const canAct = quoteStatus === 'sent' || quoteStatus === 'changes_requested';
   const revisionsRemaining = Math.max(0, 3 - revisionRound);
 
-  const showActions = canAct && !isConfirmed && !isRejected;
+  const showActions = canAct && !isConfirmed && !isRejected && !paymentInitiated && !paymentAwaitingReview;
 
   const advanceAmount = Number(quote.confirmation_amount) > 0
     ? Number(quote.confirmation_amount)
@@ -100,11 +119,6 @@ const QuoteActionsPanel: React.FC<QuoteActionsPanelProps> = ({ quote, onRefresh 
 
   const handleAcceptAndProceed = async () => {
     if (!user) return;
-    if (isAcceptedPendingPayment) {
-      setError(null);
-      setActionMode('payment');
-      return;
-    }
     try {
       setAccepting(true);
       setError(null);
@@ -116,7 +130,7 @@ const QuoteActionsPanel: React.FC<QuoteActionsPanelProps> = ({ quote, onRefresh 
       setActionMode('payment');
       onRefresh();
     } catch (err: any) {
-      setError(err.message || 'Could not accept this quotation.');
+      setError(err.message || 'Could not start the confirmation payment.');
     } finally {
       setAccepting(false);
     }
@@ -178,26 +192,6 @@ const QuoteActionsPanel: React.FC<QuoteActionsPanelProps> = ({ quote, onRefresh 
     }
   };
 
-  const handleCancelAcceptance = async () => {
-    if (!user) return;
-    try {
-      setSubmitting(true);
-      setError(null);
-      const { error: rpcError } = await supabase.rpc('cancel_quote_acceptance', {
-        p_quote_id: quote.id,
-        p_reason: 'Cancelled by homeowner before advance payment',
-      });
-      if (rpcError) throw rpcError;
-      setSuccess('Quotation selection cancelled. The project is open for quotations again.');
-      setActionMode(null);
-      onRefresh();
-    } catch (err: any) {
-      setError(err.message || 'Failed to cancel acceptance.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   const toggleChangeOption = (key: string) => {
     setChangeOptions((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
   };
@@ -215,29 +209,47 @@ const QuoteActionsPanel: React.FC<QuoteActionsPanelProps> = ({ quote, onRefresh 
         </div>
       );
     }
-    if (isAcceptedPendingPayment) {
+    if (paymentAwaitingReview) {
       return (
         <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-4 flex items-start space-x-2">
           <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="font-medium text-amber-800">Payment Pending Verification</p>
+            <p className="text-sm text-amber-700">Your transfer proof was received. The quotation stays unaccepted until the designer or an administrator confirms the payment.</p>
+          </div>
+        </div>
+      );
+    }
+    if (paymentInitiated) {
+      return (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 mb-4 flex items-start space-x-2">
+          <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
           <div className="flex-1">
-            <p className="font-medium text-amber-800">Advance Payment Pending</p>
-            <p className="text-sm text-amber-700">You accepted this quotation but the {advanceConfig.percent}% advance payment has not been verified yet. The designer's contact details remain locked until payment is confirmed. Use Retry below to complete the payment, or Cancel to release the selection.</p>
-            <div className="flex flex-wrap gap-2 mt-3">
-              <button
-                onClick={() => { setError(null); setSuccess(null); setActionMode('payment'); }}
-                className="inline-flex items-center space-x-1.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
-              >
-                <RotateCcw className="w-4 h-4" /><span>Retry Payment</span>
-              </button>
-              <button
-                onClick={handleCancelAcceptance}
-                disabled={submitting}
-                className="inline-flex items-center space-x-1.5 bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
-              >
-                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />}
-                <span>Cancel Selection</span>
-              </button>
-            </div>
+            <p className="font-medium text-blue-800">Payment Initiated</p>
+            <p className="text-sm text-blue-700">A confirmation payment was started and is not verified. The quotation is not accepted. Continue the payment or close this page; closing it does not accept the quotation.</p>
+            <button
+              onClick={() => { setError(null); setSuccess(null); setActionMode('payment'); }}
+              className="inline-flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors mt-3"
+            >
+              <RotateCcw className="w-4 h-4" /><span>Continue Payment</span>
+            </button>
+          </div>
+        </div>
+      );
+    }
+    if (paymentFailed) {
+      return (
+        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4 flex items-start space-x-2">
+          <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="font-medium text-red-800">Payment Failed</p>
+            <p className="text-sm text-red-700">The confirmation payment was not completed. The quotation remains unaccepted.</p>
+            <button
+              onClick={() => { setError(null); setSuccess(null); setActionMode('accept'); }}
+              className="inline-flex items-center space-x-1.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors mt-3"
+            >
+              <RotateCcw className="w-4 h-4" /><span>Try Payment Again</span>
+            </button>
           </div>
         </div>
       );
@@ -349,7 +361,7 @@ const QuoteActionsPanel: React.FC<QuoteActionsPanelProps> = ({ quote, onRefresh 
             )}
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-700 flex items-start space-x-2">
               <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              <span>Accepting selects this designer and closes the other quotations for this project. You will pay the {percentLabel}% advance amount next, by card, net banking, wallet or UPI, or by UPI transfer with approval. The designer's contact details unlock only after payment is confirmed, and the project becomes active at that point.</span>
+              <span>The quotation is not accepted until this {percentLabel}% confirmation payment is verified. Closing this window, cancelling, or a failed payment leaves the quotation unchanged. Card and net-banking payments are verified by the payment provider. A UPI transfer stays pending until the designer or an administrator confirms the receipt.</span>
             </div>
             <div className="flex gap-3 pt-2">
               <button onClick={closeAll} disabled={accepting} className="flex-1 bg-gray-200 text-gray-800 py-2.5 rounded-lg font-medium hover:bg-gray-300 transition-colors disabled:opacity-50">Cancel</button>
@@ -358,6 +370,11 @@ const QuoteActionsPanel: React.FC<QuoteActionsPanelProps> = ({ quote, onRefresh 
                 <span>{accepting ? 'Processing...' : `Continue to ${percentLabel}% Payment`}</span>
               </button>
             </div>
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-600 px-3 py-2 rounded-lg flex items-start space-x-2 text-sm">
+                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" /><span>{error}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -508,19 +525,24 @@ const QuoteActionsPanel: React.FC<QuoteActionsPanelProps> = ({ quote, onRefresh 
           purpose="quote_advance"
           referenceId={quote.id}
           title="Quotation advance payment"
-          description={`${advanceConfig.percent}% advance for your confirmed quotation`}
+          description={`${advanceConfig.percent}% confirmation payment. The quotation is accepted only after this payment is verified.`}
           baseAmount={advanceAmount}
           onPaid={() => {
-            setSuccess('Payment verified! Your quotation is confirmed and designer contact details are now unlocked.');
+            setSuccess('Payment verified. The quotation is now accepted and the project is active.');
+            setPaymentRefreshKey((key) => key + 1);
             closeAll();
             onRefresh();
           }}
           onSubmitted={() => {
-            setSuccess('Your transfer proof was submitted. The advance will be confirmed once the payment is approved.');
+            setSuccess('Payment proof submitted. The quotation stays unaccepted until the payment is confirmed.');
+            setPaymentRefreshKey((key) => key + 1);
             closeAll();
             onRefresh();
           }}
-          onClose={closeAll}
+          onClose={() => {
+            setPaymentRefreshKey((key) => key + 1);
+            closeAll();
+          }}
         />
       )}
       {actionMode === 'changes' && renderChangesModal()}

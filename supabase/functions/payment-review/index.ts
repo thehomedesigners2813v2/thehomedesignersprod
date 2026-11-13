@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { emailCompletedProjectPayment } from "../_shared/projectPaymentEmail.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -31,7 +32,14 @@ Deno.serve(async (req) => {
       .eq("user_id", userData.user.id)
       .eq("is_active", true)
       .maybeSingle();
-    if (!adminRow) return json({ error: "Admin access is required." }, 403);
+
+    const { data: designer } = await admin
+      .from("designers")
+      .select("id")
+      .eq("user_id", userData.user.id)
+      .maybeSingle();
+
+    if (!adminRow && !designer) return json({ error: "You are not allowed to review this payment." }, 403);
 
     const body = await req.json();
     const paymentOrderId = String(body?.paymentOrderId || "");
@@ -40,12 +48,16 @@ Deno.serve(async (req) => {
 
     const { data: order } = await admin
       .from("payment_orders")
-      .select("id, method, status")
+      .select("id, method, status, purpose, designer_id, reference_id")
       .eq("id", paymentOrderId)
       .maybeSingle();
     if (!order) return json({ error: "Payment not found." }, 404);
     if (order.method !== "upi" || order.status !== "awaiting_review") {
       return json({ error: "Only UPI payments awaiting review can be decided." }, 400);
+    }
+    const designerCanReview = order.purpose === "quote_advance" || order.purpose === "project_payment";
+    if (!adminRow && (!designerCanReview || order.designer_id !== designer?.id)) {
+      return json({ error: "You can only confirm a payment for your own project." }, 403);
     }
 
     const reviewer = { reviewed_by: userData.user.id, reviewed_at: new Date().toISOString(), review_note: note };
@@ -59,6 +71,13 @@ Deno.serve(async (req) => {
       if (error) throw error;
       const { error: updateError } = await admin.from("payment_orders").update(reviewer).eq("id", order.id);
       if (updateError) throw updateError;
+      if (order.purpose === "project_payment") {
+        try {
+          await emailCompletedProjectPayment(admin, order.id);
+        } catch (emailError) {
+          console.error("Payment receipt email failed:", emailError);
+        }
+      }
       return json({ status: "paid" });
     }
 
@@ -68,6 +87,14 @@ Deno.serve(async (req) => {
         .update({ ...reviewer, status: "rejected", updated_at: new Date().toISOString() })
         .eq("id", order.id);
       if (error) throw error;
+      if (order.purpose === "project_payment") {
+        const { error: requestError } = await admin
+          .from("project_payment_requests")
+          .update({ status: "requested", payment_order_id: null, updated_at: new Date().toISOString() })
+          .eq("id", order.reference_id)
+          .eq("status", "awaiting_review");
+        if (requestError) throw requestError;
+      }
       return json({ status: "rejected" });
     }
 

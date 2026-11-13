@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { emailCompletedProjectPayment } from "../_shared/projectPaymentEmail.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,7 +16,7 @@ const json = (body: unknown, status = 200) =>
 const FEE_RATE = 0.02;
 const UPI_ID = "8722263004@axisbank";
 const UPI_PAYEE = "The Home Designers";
-const PURPOSES = ["designer_subscription", "ai_subscription", "wallpaper_order", "quote_advance"];
+const PURPOSES = ["designer_subscription", "ai_subscription", "wallpaper_order", "quote_advance", "project_payment"];
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const TXN_RE = /^[A-Za-z0-9]{6,30}$/;
 
@@ -96,6 +97,29 @@ async function resolveOrder(
     return { baseAmount: Number(aiPlan.price), designerId: designer.id };
   }
 
+  if (purpose === "project_payment") {
+    const { data: request } = await admin
+      .from("project_payment_requests")
+      .select("id, project_id, designer_id, amount, status")
+      .eq("id", referenceId)
+      .maybeSingle();
+    if (!request) throw new PaymentError("This payment request was not found.");
+    if (request.status === "paid") throw new PaymentError("This payment has already been received.");
+    if (request.status === "awaiting_review") {
+      throw new PaymentError("This payment is waiting for the designer to confirm it.");
+    }
+    if (request.status !== "requested") throw new PaymentError("This payment request is not open.");
+
+    const { data: project } = await admin
+      .from("customers").select("user_id").eq("id", request.project_id).maybeSingle();
+    if (!project || project.user_id !== userId) {
+      throw new PaymentError("This payment request is not on your account.");
+    }
+    const baseAmount = Number(request.amount);
+    if (!(baseAmount > 0)) throw new PaymentError("The requested amount is not valid.");
+    return { baseAmount, designerId: request.designer_id };
+  }
+
   if (purpose === "wallpaper_order") {
     const { data: customer } = await admin.from("customers").select("id").eq("user_id", userId).maybeSingle();
     const { data: order } = await admin
@@ -118,14 +142,16 @@ async function resolveOrder(
 
   const { data: quote } = await admin
     .from("designer_quotes")
-    .select("project_id, designer_id, payment_status, confirmation_amount")
+    .select("project_id, designer_id, status, payment_status, confirmation_amount")
     .eq("id", referenceId)
     .maybeSingle();
   if (!quote) throw new PaymentError("This quotation was not found.");
   const { data: project } = await admin
-    .from("customers").select("user_id, accepted_quote_id").eq("id", quote.project_id).maybeSingle();
+    .from("customers").select("user_id").eq("id", quote.project_id).maybeSingle();
   if (!project || project.user_id !== userId) throw new PaymentError("This quotation is not on your account.");
-  if (project.accepted_quote_id !== referenceId) throw new PaymentError("Accept this quotation before paying the advance.");
+  if (!["sent", "draft", "changes_requested"].includes(quote.status)) {
+    throw new PaymentError("This quotation is not awaiting a confirmation payment.");
+  }
   if (quote.payment_status === "verified") throw new PaymentError("The advance for this quotation is already paid.");
   const baseAmount = Number(quote.confirmation_amount);
   if (!(baseAmount > 0)) throw new PaymentError("The advance amount for this quotation is not set.");
@@ -148,6 +174,15 @@ async function createPayment(admin: Admin, userId: string, body: any) {
   } catch (err) {
     if (err instanceof PaymentError) return json({ error: err.message }, 400);
     throw err;
+  }
+
+  if (purpose === "project_payment") {
+    await admin
+      .from("payment_orders")
+      .update({ status: "failed", updated_at: new Date().toISOString() })
+      .eq("purpose", "project_payment")
+      .eq("reference_id", referenceId)
+      .eq("status", "pending");
   }
 
   const base = round2(resolved.baseAmount);
@@ -216,7 +251,7 @@ async function loadOwnedOrder(admin: Admin, userId: string, paymentOrderId: unkn
   if (!UUID_RE.test(String(paymentOrderId))) return null;
   const { data } = await admin
     .from("payment_orders")
-    .select("id, method, status, payer_user_id, razorpay_order_id, total_amount")
+    .select("id, method, status, purpose, reference_id, payer_user_id, razorpay_order_id, total_amount")
     .eq("id", paymentOrderId)
     .maybeSingle();
   if (!data || data.payer_user_id !== userId) return null;
@@ -241,7 +276,7 @@ async function submitUpi(admin: Admin, userId: string, body: any) {
     return json({ error: "Invalid screenshot upload." }, 400);
   }
 
-  const { error } = await admin
+  const { data: updated, error } = await admin
     .from("payment_orders")
     .update({
       status: "awaiting_review",
@@ -250,12 +285,52 @@ async function submitUpi(admin: Admin, userId: string, body: any) {
       review_note: null,
       updated_at: new Date().toISOString(),
     })
-    .eq("id", order.id);
+    .eq("id", order.id)
+    .select("purpose, designer_id, reference_id")
+    .single();
   if (error) {
     if (error.code === "23505") {
       return json({ error: "This UPI transaction ID has already been submitted." }, 409);
     }
     throw error;
+  }
+
+  if (updated?.purpose === "project_payment") {
+    await admin
+      .from("project_payment_requests")
+      .update({
+        status: "awaiting_review",
+        payment_order_id: order.id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", updated.reference_id)
+      .in("status", ["requested", "awaiting_review"]);
+  }
+
+  if ((updated?.purpose === "quote_advance" || updated?.purpose === "project_payment") && updated.designer_id) {
+    const { data: designer } = await admin.from("designers").select("user_id").eq("id", updated.designer_id).maybeSingle();
+    let referenceId = updated.reference_id;
+    if (updated.purpose === "project_payment") {
+      const { data: request } = await admin
+        .from("project_payment_requests")
+        .select("project_id")
+        .eq("id", updated.reference_id)
+        .maybeSingle();
+      if (request?.project_id) referenceId = request.project_id;
+    }
+    if (designer?.user_id) {
+      await admin.rpc("create_notification", {
+        p_user_id: designer.user_id,
+        p_user_type: "designer",
+        p_title: updated.purpose === "project_payment" ? "Project payment awaiting review" : "Confirmation payment awaiting review",
+        p_message: updated.purpose === "project_payment"
+          ? "A homeowner uploaded proof of a project payment. Confirm receipt to apply it to the bill."
+          : "A homeowner uploaded proof of the quotation confirmation payment. Confirm receipt before the quotation can be accepted.",
+        p_type: "payment_pending_verification",
+        p_reference_id: referenceId,
+        p_reference_type: updated.purpose === "project_payment" ? "bill" : "quotation",
+      });
+    }
   }
 
   return json({ status: "awaiting_review" });
@@ -283,6 +358,13 @@ async function verifyRazorpay(admin: Admin, userId: string, body: any) {
     p_provider_response: null,
   });
   if (error) throw error;
+  if (order.purpose === "project_payment") {
+    try {
+      await emailCompletedProjectPayment(admin, order.id);
+    } catch (emailError) {
+      console.error("Payment receipt email failed:", emailError);
+    }
+  }
 
   return json({ status: "paid" });
 }

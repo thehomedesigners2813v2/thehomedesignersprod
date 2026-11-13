@@ -102,11 +102,11 @@ const CustomerQuotes = () => {
     fetchQuotes();
   }, [authLoading, user, navigate]);
 
-  const fetchQuotes = async () => {
+  const fetchQuotes = async (silent = false) => {
    // if (!user) return;
 
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
 
       // First try using the RPC function
@@ -147,7 +147,7 @@ const CustomerQuotes = () => {
           .select(`
             *,
             designer:designers(id, name, specialization, profile_image),
-            project:customers(id, project_name, user_id, assigned_designer_id)
+            project:customers!designer_quotes_project_id_fkey(id, project_name, user_id, assigned_designer_id)
           `)
           .in('project_id', projectIds)
           .order('created_at', { ascending: false });
@@ -198,6 +198,7 @@ const CustomerQuotes = () => {
           }));
 
           setQuotes(quotesWithItems);
+          setSelectedQuote((current) => current ? quotesWithItems.find((quote) => quote.id === current.id) ?? current : current);
           setLoading(false);
           return;
         }
@@ -238,6 +239,7 @@ const CustomerQuotes = () => {
   })
 );
       setAllQuotes(processedQuotes);
+      setSelectedQuote((current) => current ? processedQuotes.find((quote) => quote.id === current.id) ?? current : current);
 
       // Filter by project if projectId is in URL
       if (projectIdFilter) {
@@ -274,7 +276,7 @@ const CustomerQuotes = () => {
     }).format(amount);
   };
 
-  const getStatusBadge = (status: string, accepted: boolean, paymentStatus?: string) => {
+  const getStatusBadge = (status: string, _accepted: boolean, _paymentStatus?: string) => {
     switch (status) {
       case 'draft':
         return <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium">Draft</span>;
@@ -288,18 +290,10 @@ const CustomerQuotes = () => {
           </span>
         );
       case 'accepted':
-        if (paymentStatus === 'verified') {
-          return (
-            <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1">
-              <ShieldCheck className="w-3 h-3" />
-              <span>Confirmed</span>
-            </span>
-          );
-        }
         return (
-          <span className="bg-amber-100 text-amber-800 px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1">
-            <Clock className="w-3 h-3" />
-            <span>Payment Pending</span>
+          <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1">
+            <ShieldCheck className="w-3 h-3" />
+            <span>Accepted</span>
           </span>
         );
       case 'rejected':
@@ -862,7 +856,7 @@ const CustomerQuotes = () => {
                 </div>
               )}
 
-              <QuoteActionsPanel quote={selectedQuote} onRefresh={fetchQuotes} />
+              <QuoteActionsPanel quote={selectedQuote} onRefresh={() => fetchQuotes(true)} />
             </div>
           </div>
         </div>
