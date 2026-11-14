@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Calendar, MapPin, IndianRupee as Rupee, Clock, CreditCard as Edit, Eye, Trash2, AlertCircle, Send, Activity, Compass, FileText, CheckCircle, MessageSquare } from 'lucide-react';
+import { Plus, Calendar, MapPin, IndianRupee as Rupee, Clock, Pencil, Eye, Trash2, AlertCircle, Send, Activity, Compass, FileText, CheckCircle, MessageSquare } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import type { Customer } from '../lib/supabase';
@@ -8,6 +8,7 @@ import AssignProjectModal from '../components/AssignProjectModal';
 import SendToDesignerModal from '../components/SendToDesignerModal';
 import VastuAnalysisModal from '../components/VastuAnalysisModal';
 import TestimonialFeedbackModal from '../components/TestimonialFeedbackModal';
+import PaymentOptionsModal from '../components/payments/PaymentOptionsModal';
 
 const MyProjects = () => {
   const navigate = useNavigate();
@@ -24,6 +25,8 @@ const MyProjects = () => {
   const [projectQuotes, setProjectQuotes] = useState<Record<string, any>>({});
   const [projectHasQuotes, setProjectHasQuotes] = useState<Record<string, boolean>>({});
   const [projectHasFeedback, setProjectHasFeedback] = useState<Record<string, boolean>>({});
+  const [paymentAsks, setPaymentAsks] = useState<Record<string, { id: string; amount: number; status: string }>>({});
+  const [payingProjectId, setPayingProjectId] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -114,6 +117,18 @@ const MyProjects = () => {
           });
           setProjectHasFeedback(hasFeedbackMap);
         }
+
+        const { data: askData } = await supabase
+          .from('project_payment_requests')
+          .select('id, project_id, amount, status')
+          .in('project_id', projectIds)
+          .in('status', ['requested', 'awaiting_review']);
+
+        const askMap: Record<string, { id: string; amount: number; status: string }> = {};
+        (askData || []).forEach((ask) => {
+          askMap[ask.project_id] = ask;
+        });
+        setPaymentAsks(askMap);
       }
     } catch (error: any) {
       console.error('Error fetching projects:', error);
@@ -467,8 +482,9 @@ const MyProjects = () => {
                       <button
                         onClick={() => navigate(`/edit-project/${project.id}`)}
                         className="bg-secondary-500 hover:bg-secondary-600 text-white py-2 px-3 rounded-lg font-medium transition-colors"
+                        title="Edit project"
                       >
-                        <Edit className="w-4 h-4" />
+                        <Pencil className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteProject(project.id)}
@@ -497,6 +513,20 @@ const MyProjects = () => {
                           <FileText className="w-4 h-4" />
                           <span>View Bill</span>
                         </button>
+                        {paymentAsks[project.id]?.status === 'requested' && (
+                          <button
+                            onClick={() => setPayingProjectId(project.id)}
+                            className="w-full bg-amber-500 hover:bg-amber-600 text-white py-2 px-3 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
+                          >
+                            <Rupee className="w-4 h-4" />
+                            <span>Pay Rs {Number(paymentAsks[project.id].amount).toLocaleString('en-IN')}</span>
+                          </button>
+                        )}
+                        {paymentAsks[project.id]?.status === 'awaiting_review' && (
+                          <div className="w-full bg-amber-50 border border-amber-200 text-amber-800 py-2 px-3 rounded-lg text-sm text-center">
+                            Payment proof is waiting for confirmation.
+                          </div>
+                        )}
                         {project.assignment_status === 'completed' && !projectHasFeedback[project.id] && (project as any).assigned_designer && (
                           <button
                             onClick={() => handleLeaveFeedback(project)}
@@ -602,6 +632,24 @@ const MyProjects = () => {
             setSelectedProject(null);
           }}
           onSuccess={handleFeedbackSuccess}
+        />
+      )}
+      {payingProjectId && paymentAsks[payingProjectId] && (
+        <PaymentOptionsModal
+          purpose="project_payment"
+          referenceId={paymentAsks[payingProjectId].id}
+          title="Project payment"
+          description="Pay the amount requested by your designer. The Razorpay option adds a 2% processing fee. The fee is not added to the project bill."
+          baseAmount={Number(paymentAsks[payingProjectId].amount)}
+          onPaid={() => {
+            setPayingProjectId(null);
+            fetchProjects();
+          }}
+          onSubmitted={() => {
+            setPayingProjectId(null);
+            fetchProjects();
+          }}
+          onClose={() => setPayingProjectId(null)}
         />
       )}
     </div>

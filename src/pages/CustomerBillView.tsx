@@ -19,6 +19,7 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import { generateBillPdf } from '../utils/generateBillPdf';
+import BillPaymentsSection from '../components/BillPaymentsSection';
 
 interface BillItem {
   id: string;
@@ -503,6 +504,25 @@ const CustomerBillView = () => {
               </div>
             </div>
           </div>
+
+          {!viewingVersion && (
+            <div className="px-6 py-5 border-t border-gray-100">
+              <BillPaymentsSection
+                projectId={bill.project_id}
+                billId={bill.id}
+                billTotal={Number(bill.total_amount)}
+                mode="customer"
+                onUpdated={async () => {
+                  const { data } = await supabase
+                    .from('project_bills')
+                    .select('status')
+                    .eq('id', bill.id)
+                    .maybeSingle();
+                  if (data?.status) setBill((current) => current ? { ...current, status: data.status } : current);
+                }}
+              />
+            </div>
+          )}
 
           {/* Notes */}
           {displayNotes && (

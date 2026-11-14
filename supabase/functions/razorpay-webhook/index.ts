@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { emailCompletedProjectPayment } from "../_shared/projectPaymentEmail.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -63,7 +64,7 @@ Deno.serve(async (req) => {
 
     const { data: order, error: orderError } = await admin
       .from("payment_orders")
-      .select("id, status, total_amount")
+      .select("id, status, total_amount, purpose")
       .eq("razorpay_order_id", payment.order_id)
       .maybeSingle();
     if (orderError) throw orderError;
@@ -95,6 +96,13 @@ Deno.serve(async (req) => {
       p_provider_response: payment,
     });
     if (fulfillError) throw fulfillError;
+    if (order.purpose === "project_payment") {
+      try {
+        await emailCompletedProjectPayment(admin, order.id);
+      } catch (emailError) {
+        console.error("Payment receipt email failed:", emailError);
+      }
+    }
 
     return new Response(JSON.stringify({ status: "paid" }), {
       status: 200,
