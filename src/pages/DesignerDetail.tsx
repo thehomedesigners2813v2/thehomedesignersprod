@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import AuthModal from '../components/AuthModal';
 import { MATERIAL_CATALOG, SERVICE_CATALOG, resolveSelection } from '../lib/designerCatalog';
+import IntroVideo from '../components/designer/IntroVideo';
 
 type PublicDesigner = {
   id: string;
@@ -22,6 +23,8 @@ type PublicDesigner = {
   total_reviews: number;
   is_verified: boolean;
   google_location_url?: string;
+  intro_youtube_id?: string | null;
+  intro_video_url?: string | null;
 };
 
 type Review = {
@@ -51,7 +54,7 @@ type PaidContact = {
   starting_price: string | null;
 };
 
-const publicColumns = 'id, name, specialization, experience, location, bio, website, profile_image, services, materials_expertise, awards, rating, total_reviews, is_verified, google_location_url';
+const publicColumns = 'id, name, specialization, experience, location, bio, website, profile_image, services, materials_expertise, awards, rating, total_reviews, is_verified, google_location_url, intro_youtube_id, intro_video_url';
 
 export default function DesignerDetail() {
   const { id } = useParams();
@@ -186,6 +189,11 @@ export default function DesignerDetail() {
               </div>
               <p className="mt-2 text-lg">{designer.specialization}</p>
               <p className="mt-1 inline-flex items-center gap-1 text-sm text-gray-600"><MapPin className="h-4 w-4" /> {designer.location}</p>
+              {(designer.intro_youtube_id || designer.intro_video_url) && (
+                <div className="mt-4">
+                  <IntroVideo videoId={designer.intro_youtube_id} videoUrl={designer.intro_video_url} name={designer.name} />
+                </div>
+              )}
             </div>
           </div>
           <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">

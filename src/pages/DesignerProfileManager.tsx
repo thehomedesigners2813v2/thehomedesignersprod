@@ -5,6 +5,8 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { useDesignerProfile } from '../hooks/useDesignerProfile';
 import CatalogPicker from '../components/designer/CatalogPicker';
+import IntroVideo from '../components/designer/IntroVideo';
+import IntroVideoCapture from '../components/designer/IntroVideoCapture';
 import {
   MATERIAL_CATALOG,
   MATERIAL_CATEGORIES,
@@ -52,6 +54,9 @@ export default function DesignerProfileManager() {
   const [customMaterials, setCustomMaterials] = useState<{ name: string; imageUrl?: string }[]>([]);
   const [projects, setProjects] = useState<PortfolioProject[]>([]);
   const [reviewCount, setReviewCount] = useState(0);
+  const [introVideoId, setIntroVideoId] = useState<string | null>(null);
+  const [introVideoUrl, setIntroVideoUrl] = useState<string | null>(null);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
 
   useEffect(() => {
     if (!designer) return;
@@ -62,6 +67,8 @@ export default function DesignerProfileManager() {
       profile_image: designer.profile_image || ''
     });
     setAbout({ experience: String(designer.experience ?? ''), bio: designer.bio || '' });
+    setIntroVideoId(designer.intro_youtube_id || null);
+    setIntroVideoUrl(designer.intro_video_url || null);
     const services = decodeSelection(designer.services, SERVICE_CATALOG);
     const materials = decodeSelection(designer.materials_expertise, MATERIAL_CATALOG);
     setServiceIds(services.ids);
@@ -119,6 +126,80 @@ export default function DesignerProfileManager() {
       return null;
     }
     return supabase.storage.from('designer-profiles').getPublicUrl(path).data.publicUrl;
+  };
+
+  const functionError = async (error: { message: string; context?: Response }, fallback: string) => {
+    try {
+      const body = await error.context?.json();
+      if (body?.error) return String(body.error);
+    } catch { /* the function returned a non-JSON error */ }
+    return error.message || fallback;
+  };
+
+  const readVideoDuration = (file: File) => new Promise<number>((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.onloadedmetadata = () => {
+      URL.revokeObjectURL(url);
+      resolve(video.duration);
+    };
+    video.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('This video could not be read. Use an MP4, WebM, or MOV file.'));
+    };
+    video.src = url;
+  });
+
+  const publishIntroVideo = async (file: File, knownDuration?: number) => {
+    if (!user || !designer) return;
+    setUploadingVideo(true);
+    setError(null);
+    setMessage('Saving your introduction...');
+    try {
+      if (file.size > 30 * 1024 * 1024) throw new Error('The video must be smaller than 30 MB.');
+      const duration = knownDuration ?? await readVideoDuration(file);
+      if (!Number.isFinite(duration) || duration <= 0 || duration > 60) throw new Error('The introduction must be 1 minute or shorter.');
+      const extension = file.name.split('.').pop()?.toLowerCase() || 'webm';
+      const path = `${user.id}/intro-${Date.now()}.${extension}`;
+      const { error: uploadError } = await supabase.storage.from('designer-intro-videos').upload(path, file, { contentType: file.type || 'video/webm', cacheControl: '3600' });
+      if (uploadError) throw new Error(uploadError.message);
+      const publicUrl = supabase.storage.from('designer-intro-videos').getPublicUrl(path).data.publicUrl;
+      const saved = await updateDesignerProfile({ intro_video_url: `${publicUrl}?v=${Date.now()}` });
+      if (saved.error) throw new Error(saved.error);
+      setIntroVideoUrl(saved.data?.intro_video_url || publicUrl);
+      setMessage('Introduction saved. It is now on your profile.');
+
+      const { data, error } = await supabase.functions.invoke('youtube-intro-upload', {
+        body: { storagePath: path, durationSeconds: duration, mimeType: file.type || 'video/webm' }
+      });
+      if (!error && data?.videoId) {
+        setIntroVideoId(data.videoId);
+        setMessage('Introduction video published. It is now on your profile.');
+      }
+    } catch (uploadError) {
+      setMessage(null);
+      setError(uploadError instanceof Error ? uploadError.message : 'The introduction could not be saved.');
+    } finally {
+      setUploadingVideo(false);
+    }
+  };
+
+  const removeIntroVideo = async () => {
+    setUploadingVideo(true);
+    setError(null);
+    setMessage('Removing your introduction...');
+    const saved = await updateDesignerProfile({ intro_video_url: null });
+    const { error } = await supabase.functions.invoke('youtube-intro-upload', { body: { action: 'remove' } });
+    setUploadingVideo(false);
+    if (saved.error && error) {
+      setMessage(null);
+      setError(await functionError(error, 'The introduction could not be removed.'));
+      return;
+    }
+    setIntroVideoId(null);
+    setIntroVideoUrl(null);
+    setMessage('Introduction video removed.');
   };
 
   const uploadProfile = async (file: File) => {
@@ -186,12 +267,33 @@ export default function DesignerProfileManager() {
           )}
 
           {section === 'about' && (
+            <>
             <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); save({ experience: Number(about.experience) || 0, bio: about.bio }, 'About and experience saved.'); }}>
               <h1 className="text-2xl font-semibold">About & Experience</h1>
               <input type="number" min="0" className="w-full rounded-lg border px-3 py-2" value={about.experience} onChange={(event) => setAbout({ ...about, experience: event.target.value })} placeholder="Years of experience" />
               <textarea className="min-h-40 w-full rounded-lg border px-3 py-2" value={about.bio} onChange={(event) => setAbout({ ...about, bio: event.target.value })} placeholder="About the designer or business" />
               <button disabled={saving} className="rounded-lg bg-[#D96C4D] px-4 py-2 text-white">{saving ? 'Saving...' : 'Save'}</button>
             </form>
+            <div className="mt-8 border-t pt-6">
+              <h2 className="text-lg font-semibold">Introduction video</h2>
+              <p className="mt-2 text-sm text-gray-600">Upload one public video of 1 minute or less. It is published on the thehomedesigners2813@gmail.com YouTube channel. Customers open it from the Introduction button on your profile.</p>
+              {(introVideoId || introVideoUrl) && (
+                <div className="mt-4 max-w-md">
+                  <IntroVideo videoId={introVideoId} videoUrl={introVideoUrl} name={designer.name} />
+                  <button type="button" disabled={uploadingVideo} onClick={removeIntroVideo} className="mt-3 text-sm text-red-700">Remove video</button>
+                </div>
+              )}
+              <IntroVideoCapture
+                disabled={uploadingVideo}
+                onPicked={(file) => void publishIntroVideo(file)}
+                onRecorded={(file, durationSeconds) => void publishIntroVideo(file, Math.min(60, durationSeconds))}
+              />
+              <p className="mt-2 text-sm text-gray-600">MP4, WebM, or MOV, up to 30 MB.</p>
+              {uploadingVideo && <p className="mt-3 text-sm text-gray-600">Saving your introduction...</p>}
+              {message && <p className="mt-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">{message}</p>}
+              {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+            </div>
+            </>
           )}
 
           {section === 'services' && (

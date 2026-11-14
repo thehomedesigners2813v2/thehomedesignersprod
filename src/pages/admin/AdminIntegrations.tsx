@@ -1,25 +1,31 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Loader2, AlertTriangle, Plug, CheckCircle, XCircle, MessageSquare, Mail, Sparkles } from 'lucide-react';
+import { Loader2, AlertTriangle, CheckCircle, XCircle, MessageSquare, Mail, Sparkles, Youtube } from 'lucide-react';
 
 const AdminIntegrations: React.FC = () => {
   const [whatsappSettings, setWhatsappSettings] = useState<any>(null);
   const [aiConfig, setAiConfig] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [youtubeLabel, setYoutubeLabel] = useState<string | null>(null);
+  const [youtubeConnected, setYoutubeConnected] = useState(false);
+  const [connecting, setConnecting] = useState(false);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [wRes, aRes] = await Promise.all([
+      const [wRes, aRes, youtubeRes] = await Promise.all([
         supabase.from('whatsapp_settings').select('*').maybeSingle(),
         supabase.from('ai_configuration').select('*').eq('id', true).maybeSingle(),
+        supabase.functions.invoke('youtube-intro-upload', { body: { action: 'status' } }),
       ]);
       if (wRes.error) throw wRes.error;
       if (aRes.error) throw aRes.error;
       setWhatsappSettings(wRes.data);
       setAiConfig(aRes.data);
+      setYoutubeConnected(Boolean(youtubeRes.data?.connected));
+      setYoutubeLabel(youtubeRes.data?.channelLabel || null);
     } catch (e: any) {
       setError(e.message || 'Failed to load integrations');
     } finally {
@@ -28,6 +34,23 @@ const AdminIntegrations: React.FC = () => {
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  const connectYoutube = async () => {
+    setConnecting(true);
+    setError(null);
+    const { data, error: connectError } = await supabase.functions.invoke('youtube-intro-upload', { body: { action: 'connect' } });
+    setConnecting(false);
+    if (connectError || !data?.url) {
+      let message = 'The YouTube channel could not be connected.';
+      try {
+        const body = await connectError?.context?.json();
+        if (body?.error) message = body.error;
+      } catch { /* keep the fallback message */ }
+      setError(message);
+      return;
+    }
+    window.location.assign(data.url);
+  };
 
   if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="w-6 h-6 text-sky-600 animate-spin" /></div>;
   if (error) return (
@@ -78,6 +101,20 @@ const AdminIntegrations: React.FC = () => {
       ],
       configPath: null,
     },
+    {
+      name: 'Designer introductions (YouTube)',
+      desc: 'Publish each designer’s 1-minute introduction on thehomedesigners2813@gmail.com',
+      icon: Youtube,
+      configured: youtubeConnected,
+      enabled: youtubeConnected,
+      details: [
+        ['Channel', youtubeLabel || 'Not connected'],
+        ['Visibility', 'Public on YouTube'],
+        ['Account', 'thehomedesigners2813@gmail.com'],
+      ],
+      configPath: null,
+      connect: true,
+    },
   ];
 
   return (
@@ -119,6 +156,11 @@ const AdminIntegrations: React.FC = () => {
                 </div>
                 {int.configPath && (
                   <a href={int.configPath} className="shrink-0 text-xs text-sky-600 hover:underline">Configure</a>
+                )}
+                {'connect' in int && int.connect && (
+                  <button type="button" disabled={connecting} onClick={() => void connectYoutube()} className="shrink-0 text-xs text-sky-600 hover:underline disabled:opacity-60">
+                    {connecting ? 'Opening Google…' : youtubeConnected ? 'Reconnect' : 'Connect'}
+                  </button>
                 )}
               </div>
             </div>

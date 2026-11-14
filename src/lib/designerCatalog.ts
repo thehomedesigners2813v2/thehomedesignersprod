@@ -43,7 +43,7 @@ export const MATERIAL_CATALOG: CatalogItem[] = [
   { id: 'particle-board', name: 'Particle Board', description: 'Particle board.', category: 'Wood & Boards', image: materialImage('particle-board') },
   { id: 'laminates', name: 'Laminates', description: 'Decorative laminate samples.', category: 'Surface Finishes', image: materialImage('laminates') },
   { id: 'veneers', name: 'Veneers', description: 'Natural wood veneer.', category: 'Surface Finishes', image: materialImage('veneers') },
-  { id: 'acrylic', name: 'Acrylic', description: 'High-gloss acrylic.', category: 'Surface Finishes', image: materialImage('acrylic') },
+  { id: 'acrylic', name: 'Acrylic Laminates', description: 'High-gloss acrylic laminates.', category: 'Surface Finishes', image: materialImage('acrylic') },
   { id: 'pu-finish', name: 'PU Finish', description: 'PU finished panel.', category: 'Surface Finishes', image: materialImage('pu-finish') },
   { id: 'membrane-finish', name: 'Membrane Finish', description: 'Membrane finished panel.', category: 'Surface Finishes', image: materialImage('membrane-finish') },
   { id: 'marble', name: 'Marble', description: 'Marble surface.', category: 'Stone', image: materialImage('marble') },
@@ -51,15 +51,10 @@ export const MATERIAL_CATALOG: CatalogItem[] = [
   { id: 'quartz', name: 'Quartz', description: 'Quartz surface.', category: 'Stone', image: materialImage('quartz') },
   { id: 'hinges', name: 'Hinges', description: 'Cabinet hinges.', category: 'Hardware', image: materialImage('hinges') },
   { id: 'channels', name: 'Channels', description: 'Drawer channels.', category: 'Hardware', image: materialImage('channels') },
-  { id: 'handles', name: 'Handles', description: 'Cabinet handles.', category: 'Hardware', image: materialImage('handles') },
-  { id: 'drawer-systems', name: 'Drawer Systems', description: 'Drawer hardware.', category: 'Hardware', image: materialImage('drawer-systems') },
-  { id: 'glass', name: 'Glass', description: 'Glass material.', category: 'Other Materials', image: materialImage('glass') },
-  { id: 'aluminium', name: 'Aluminium', description: 'Aluminium finish.', category: 'Other Materials', image: materialImage('aluminium') },
-  { id: 'wallpaper', name: 'Wallpaper', description: 'Decorative wallpaper.', category: 'Other Materials', image: materialImage('wallpaper') },
-  { id: 'wpc', name: 'WPC', description: 'WPC material.', category: 'Other Materials', image: materialImage('wpc') }
+  { id: 'handles', name: 'Handles', description: 'Cabinet handles.', category: 'Hardware', image: materialImage('handles') }
 ];
 
-export const MATERIAL_CATEGORIES = ['Wood & Boards', 'Surface Finishes', 'Stone', 'Hardware', 'Other Materials'];
+export const MATERIAL_CATEGORIES = ['Wood & Boards', 'Surface Finishes', 'Stone', 'Hardware'];
 
 export function decodeSelection(stored: string[] | null | undefined, catalog: CatalogItem[]) {
   const ids: string[] = [];
@@ -69,7 +64,6 @@ export function decodeSelection(stored: string[] | null | undefined, catalog: Ca
     if (raw.startsWith('id:')) {
       const id = raw.slice(3);
       if (catalog.some((item) => item.id === id)) ids.push(id);
-      else custom.push({ name: id });
       continue;
     }
     if (raw.startsWith('custom:')) {
