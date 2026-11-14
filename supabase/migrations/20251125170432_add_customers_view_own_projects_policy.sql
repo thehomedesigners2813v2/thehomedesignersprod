@@ -16,6 +16,7 @@
 */
 
 -- Add policy for customers to view their own projects
+DROP POLICY IF EXISTS "Customers can view own projects" ON customers;
 CREATE POLICY "Customers can view own projects"
   ON customers FOR SELECT
   TO authenticated

@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS quote_acceptance_history (
 ALTER TABLE quote_acceptance_history ENABLE ROW LEVEL SECURITY;
 
 -- Add policies for quote_acceptance_history
+DROP POLICY IF EXISTS "Designers can view acceptance history for their quotes" ON quote_acceptance_history;
 CREATE POLICY "Designers can view acceptance history for their quotes"
   ON quote_acceptance_history
   FOR SELECT
@@ -49,6 +50,7 @@ CREATE POLICY "Designers can view acceptance history for their quotes"
     )
   );
 
+DROP POLICY IF EXISTS "Customers can view acceptance history for their quotes" ON quote_acceptance_history;
 CREATE POLICY "Customers can view acceptance history for their quotes"
   ON quote_acceptance_history
   FOR SELECT
@@ -62,6 +64,7 @@ CREATE POLICY "Customers can view acceptance history for their quotes"
     )
   );
 
+DROP POLICY IF EXISTS "System can insert acceptance history" ON quote_acceptance_history;
 CREATE POLICY "System can insert acceptance history"
   ON quote_acceptance_history
   FOR INSERT
@@ -83,6 +86,7 @@ CREATE POLICY "Customers can view quotes for their projects"
     )
   );
 
+DROP POLICY IF EXISTS "Customers can accept or reject quotes" ON designer_quotes;
 CREATE POLICY "Customers can accept or reject quotes"
   ON designer_quotes
   FOR UPDATE

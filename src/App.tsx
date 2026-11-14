@@ -34,6 +34,7 @@ const Materials = lazy(() => import('./pages/Materials'));
 const DesignerDetail = lazy(() => import('./pages/DesignerDetail'));
 const ProjectDetail = lazy(() => import('./pages/ProjectDetail'));
 const DesignerRegistration = lazy(() => import('./pages/DesignerRegistration'));
+const DesignerProfileManager = lazy(() => import('./pages/DesignerProfileManager'));
 const CustomerRegistration = lazy(() => import('./pages/CustomerRegistration'));
 const MyProjects = lazy(() => import('./pages/MyProjects'));
 const EditProject = lazy(() => import('./pages/EditProject'));
@@ -324,7 +325,7 @@ const AppContent: React.FC = () => {
               path="/edit-designer-profile"
               element={
                 <ProtectedDesignerRoute>
-                  <DesignerRegistration />
+                  <DesignerProfileManager />
                 </ProtectedDesignerRoute>
               }
             />

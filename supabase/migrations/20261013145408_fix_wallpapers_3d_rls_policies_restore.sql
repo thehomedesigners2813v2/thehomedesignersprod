@@ -15,6 +15,7 @@ CREATE POLICY "Anyone can view active wallpapers"
   USING (is_active = true);
 
 -- Admins can view all wallpapers (active and inactive)
+DROP POLICY IF EXISTS "Admins can view all wallpapers" ON wallpapers_3d;
 CREATE POLICY "Admins can view all wallpapers"
   ON wallpapers_3d FOR SELECT
   TO authenticated
@@ -26,6 +27,7 @@ CREATE POLICY "Admins can view all wallpapers"
   );
 
 -- Admins can insert wallpapers
+DROP POLICY IF EXISTS "Admins can insert wallpapers" ON wallpapers_3d;
 CREATE POLICY "Admins can insert wallpapers"
   ON wallpapers_3d FOR INSERT
   TO authenticated
@@ -37,6 +39,7 @@ CREATE POLICY "Admins can insert wallpapers"
   );
 
 -- Admins can update wallpapers
+DROP POLICY IF EXISTS "Admins can update wallpapers" ON wallpapers_3d;
 CREATE POLICY "Admins can update wallpapers"
   ON wallpapers_3d FOR UPDATE
   TO authenticated
@@ -54,6 +57,7 @@ CREATE POLICY "Admins can update wallpapers"
   );
 
 -- Admins can delete wallpapers
+DROP POLICY IF EXISTS "Admins can delete wallpapers" ON wallpapers_3d;
 CREATE POLICY "Admins can delete wallpapers"
   ON wallpapers_3d FOR DELETE
   TO authenticated

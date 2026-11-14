@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS project_team_members (
 ALTER TABLE project_team_members ENABLE ROW LEVEL SECURITY;
 
 -- Policies for project_team_members
+DROP POLICY IF EXISTS "Designers can manage team members for their projects" ON project_team_members;
 CREATE POLICY "Designers can manage team members for their projects"
   ON project_team_members
   FOR ALL
@@ -48,6 +49,7 @@ CREATE POLICY "Designers can manage team members for their projects"
     )
   );
 
+DROP POLICY IF EXISTS "Customers can view team members for their projects" ON project_team_members;
 CREATE POLICY "Customers can view team members for their projects"
   ON project_team_members
   FOR SELECT

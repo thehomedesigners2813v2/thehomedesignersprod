@@ -51,3 +51,24 @@ verify_jwt = true
 
 [functions.razorpay-webhook]
 verify_jwt = false
+
+[db]
+port = 54322
+
+# Local Auth. Confirmation stays on so signup emails can be read in Mailpit.
+# This file is for the local CLI only. Do not push it to the hosted production project.
+[auth]
+enabled = true
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["http://localhost:5173/**", "http://127.0.0.1:5173/**"]
+enable_signup = true
+
+[auth.email]
+enabled = true
+enable_confirmations = true
+double_confirm_changes = true
+max_frequency = "1s"
+
+[local_smtp]
+enabled = true
+port = 54324

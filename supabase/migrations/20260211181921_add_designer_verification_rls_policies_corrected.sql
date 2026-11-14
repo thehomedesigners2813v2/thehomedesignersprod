@@ -47,6 +47,7 @@ CREATE POLICY "Verified designers can update own profile"
   );
 
 -- Admin users can update any designer's verification_status
+DROP POLICY IF EXISTS "Admins can update designer verification status" ON designers;
 CREATE POLICY "Admins can update designer verification status"
   ON designers
   FOR UPDATE
@@ -88,6 +89,7 @@ CREATE POLICY "Verified designers can view their quotes"
     )
   );
 
+DROP POLICY IF EXISTS "Verified designers can create quotes" ON designer_quotes;
 CREATE POLICY "Verified designers can create quotes"
   ON designer_quotes
   FOR INSERT
@@ -100,6 +102,7 @@ CREATE POLICY "Verified designers can create quotes"
     )
   );
 
+DROP POLICY IF EXISTS "Verified designers can update their quotes" ON designer_quotes;
 CREATE POLICY "Verified designers can update their quotes"
   ON designer_quotes
   FOR UPDATE

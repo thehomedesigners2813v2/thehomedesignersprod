@@ -44,6 +44,7 @@ DROP POLICY IF EXISTS "Users can update own profile" ON customers;
 DROP POLICY IF EXISTS "Customers can update their own records" ON customers;
 
 -- Create new comprehensive update policy for customers
+DROP POLICY IF EXISTS "Customers can update own projects before quote acceptance" ON customers;
 CREATE POLICY "Customers can update own projects before quote acceptance"
   ON customers
   FOR UPDATE

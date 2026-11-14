@@ -36,6 +36,7 @@ CREATE POLICY "Admins can view all wallpapers"
     )
   );
 
+DROP POLICY IF EXISTS "Admins can insert wallpapers" ON wallpapers_3d;
 CREATE POLICY "Admins can insert wallpapers"
   ON wallpapers_3d FOR INSERT
   TO authenticated
@@ -46,6 +47,7 @@ CREATE POLICY "Admins can insert wallpapers"
     )
   );
 
+DROP POLICY IF EXISTS "Admins can update wallpapers" ON wallpapers_3d;
 CREATE POLICY "Admins can update wallpapers"
   ON wallpapers_3d FOR UPDATE
   TO authenticated
@@ -62,6 +64,7 @@ CREATE POLICY "Admins can update wallpapers"
     )
   );
 
+DROP POLICY IF EXISTS "Admins can delete wallpapers" ON wallpapers_3d;
 CREATE POLICY "Admins can delete wallpapers"
   ON wallpapers_3d FOR DELETE
   TO authenticated

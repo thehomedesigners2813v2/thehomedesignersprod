@@ -52,6 +52,13 @@ CREATE INDEX IF NOT EXISTS idx_quote_acceptance_history_changed_by
 CREATE INDEX IF NOT EXISTS idx_review_responses_designer_id_fkey 
   ON review_responses(designer_id);
 
+-- The original create-table migration is not in this history. Later migrations
+-- index, secure, clear, and then drop this removed social-wall table.
+CREATE TABLE IF NOT EXISTS public.shared_gallery_items (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  designer_id uuid REFERENCES public.designers(id)
+);
+
 -- Add indexes on foreign keys in shared_gallery_items table
 CREATE INDEX IF NOT EXISTS idx_shared_gallery_items_designer_id 
   ON shared_gallery_items(designer_id);

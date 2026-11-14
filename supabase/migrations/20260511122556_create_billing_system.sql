@@ -86,6 +86,7 @@ ALTER TABLE bill_items ENABLE ROW LEVEL SECURITY;
 -- RLS Policies for project_bills
 
 -- Designers can view bills they created
+DROP POLICY IF EXISTS "Designers can view own bills" ON project_bills;
 CREATE POLICY "Designers can view own bills"
   ON project_bills FOR SELECT
   TO authenticated
@@ -98,6 +99,7 @@ CREATE POLICY "Designers can view own bills"
   );
 
 -- Designers can insert bills for their assigned projects
+DROP POLICY IF EXISTS "Designers can create bills" ON project_bills;
 CREATE POLICY "Designers can create bills"
   ON project_bills FOR INSERT
   TO authenticated
@@ -110,6 +112,7 @@ CREATE POLICY "Designers can create bills"
   );
 
 -- Designers can update their own bills
+DROP POLICY IF EXISTS "Designers can update own bills" ON project_bills;
 CREATE POLICY "Designers can update own bills"
   ON project_bills FOR UPDATE
   TO authenticated
@@ -129,6 +132,7 @@ CREATE POLICY "Designers can update own bills"
   );
 
 -- Designers can delete their own bills
+DROP POLICY IF EXISTS "Designers can delete own bills" ON project_bills;
 CREATE POLICY "Designers can delete own bills"
   ON project_bills FOR DELETE
   TO authenticated
@@ -141,6 +145,7 @@ CREATE POLICY "Designers can delete own bills"
   );
 
 -- Customers can view bills for their projects
+DROP POLICY IF EXISTS "Customers can view bills for own projects" ON project_bills;
 CREATE POLICY "Customers can view bills for own projects"
   ON project_bills FOR SELECT
   TO authenticated
@@ -155,6 +160,7 @@ CREATE POLICY "Customers can view bills for own projects"
 -- RLS Policies for bill_items
 
 -- Designers can view items for their bills
+DROP POLICY IF EXISTS "Designers can view own bill items" ON bill_items;
 CREATE POLICY "Designers can view own bill items"
   ON bill_items FOR SELECT
   TO authenticated
@@ -168,6 +174,7 @@ CREATE POLICY "Designers can view own bill items"
   );
 
 -- Designers can insert items into their bills
+DROP POLICY IF EXISTS "Designers can add bill items" ON bill_items;
 CREATE POLICY "Designers can add bill items"
   ON bill_items FOR INSERT
   TO authenticated
@@ -181,6 +188,7 @@ CREATE POLICY "Designers can add bill items"
   );
 
 -- Designers can update items in their bills
+DROP POLICY IF EXISTS "Designers can update bill items" ON bill_items;
 CREATE POLICY "Designers can update bill items"
   ON bill_items FOR UPDATE
   TO authenticated
@@ -202,6 +210,7 @@ CREATE POLICY "Designers can update bill items"
   );
 
 -- Designers can delete items from their bills
+DROP POLICY IF EXISTS "Designers can delete bill items" ON bill_items;
 CREATE POLICY "Designers can delete bill items"
   ON bill_items FOR DELETE
   TO authenticated
@@ -215,6 +224,7 @@ CREATE POLICY "Designers can delete bill items"
   );
 
 -- Customers can view items for bills on their projects
+DROP POLICY IF EXISTS "Customers can view bill items for own projects" ON bill_items;
 CREATE POLICY "Customers can view bill items for own projects"
   ON bill_items FOR SELECT
   TO authenticated

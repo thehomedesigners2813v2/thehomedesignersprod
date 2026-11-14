@@ -79,6 +79,7 @@ CREATE INDEX IF NOT EXISTS idx_wallpaper_orders_order_date ON wallpaper_orders(o
 ALTER TABLE wallpaper_orders ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for customers
+DROP POLICY IF EXISTS "Customers can view their own wallpaper orders" ON wallpaper_orders;
 CREATE POLICY "Customers can view their own wallpaper orders"
   ON wallpaper_orders FOR SELECT
   TO authenticated
@@ -88,6 +89,7 @@ CREATE POLICY "Customers can view their own wallpaper orders"
     )
   );
 
+DROP POLICY IF EXISTS "Customers can create wallpaper orders" ON wallpaper_orders;
 CREATE POLICY "Customers can create wallpaper orders"
   ON wallpaper_orders FOR INSERT
   TO authenticated
@@ -97,6 +99,7 @@ CREATE POLICY "Customers can create wallpaper orders"
     )
   );
 
+DROP POLICY IF EXISTS "Customers can update their pending wallpaper orders" ON wallpaper_orders;
 CREATE POLICY "Customers can update their pending wallpaper orders"
   ON wallpaper_orders FOR UPDATE
   TO authenticated
@@ -112,6 +115,7 @@ CREATE POLICY "Customers can update their pending wallpaper orders"
   );
 
 -- RLS Policies for admins
+DROP POLICY IF EXISTS "Admins can view all wallpaper orders" ON wallpaper_orders;
 CREATE POLICY "Admins can view all wallpaper orders"
   ON wallpaper_orders FOR SELECT
   TO authenticated
@@ -121,6 +125,7 @@ CREATE POLICY "Admins can view all wallpaper orders"
     )
   );
 
+DROP POLICY IF EXISTS "Admins can update wallpaper orders" ON wallpaper_orders;
 CREATE POLICY "Admins can update wallpaper orders"
   ON wallpaper_orders FOR UPDATE
   TO authenticated
@@ -144,6 +149,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+DROP TRIGGER IF EXISTS update_wallpaper_orders_updated_at_trigger ON wallpaper_orders;
 CREATE TRIGGER update_wallpaper_orders_updated_at_trigger
   BEFORE UPDATE ON wallpaper_orders
   FOR EACH ROW
@@ -155,16 +161,19 @@ VALUES ('wallpaper-orders', 'wallpaper-orders', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Storage policies for wallpaper-orders bucket
+DROP POLICY IF EXISTS "Authenticated users can upload wallpaper order files" ON storage.objects;
 CREATE POLICY "Authenticated users can upload wallpaper order files"
   ON storage.objects FOR INSERT
   TO authenticated
   WITH CHECK (bucket_id = 'wallpaper-orders');
 
+DROP POLICY IF EXISTS "Users can view wallpaper order files" ON storage.objects;
 CREATE POLICY "Users can view wallpaper order files"
   ON storage.objects FOR SELECT
   TO authenticated
   USING (bucket_id = 'wallpaper-orders');
 
+DROP POLICY IF EXISTS "Admins can update wallpaper order files" ON storage.objects;
 CREATE POLICY "Admins can update wallpaper order files"
   ON storage.objects FOR UPDATE
   TO authenticated
@@ -173,6 +182,7 @@ CREATE POLICY "Admins can update wallpaper order files"
     EXISTS (SELECT 1 FROM admin_users WHERE user_id = auth.uid())
   );
 
+DROP POLICY IF EXISTS "Admins can delete wallpaper order files" ON storage.objects;
 CREATE POLICY "Admins can delete wallpaper order files"
   ON storage.objects FOR DELETE
   TO authenticated

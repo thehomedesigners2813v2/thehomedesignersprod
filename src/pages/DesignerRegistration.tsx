@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { User, Mail, Phone, MapPin, Briefcase, Globe, IndianRupee, FileText, Award, Plus, X, Upload, ArrowLeft, Save, AlertCircle, Lock, Eye, EyeOff, Building2, Wifi } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
@@ -6,6 +6,15 @@ import { useDesignerProfile } from '../hooks/useDesignerProfile';
 import { supabase } from '../lib/supabase';
 import WelcomeModal from '../components/WelcomeModal';
 import RegistrationSuccessModal from '../components/RegistrationSuccessModal';
+import CatalogPicker from '../components/designer/CatalogPicker';
+import {
+  MATERIAL_CATALOG,
+  MATERIAL_CATEGORIES,
+  SERVICE_CATALOG,
+  decodeSelection,
+  encodeSelection,
+  type CustomEntry
+} from '../lib/designerCatalog';
 
 const DesignerRegistration = () => {
   const navigate = useNavigate();
@@ -43,10 +52,13 @@ const DesignerRegistration = () => {
     profile_image: '',
     business_type: '' as '' | 'google_location' | 'virtual',
     google_location_url: '',
-    services: [''],
-    materials_expertise: [''],
     awards: ['']
   });
+  const [serviceIds, setServiceIds] = useState<string[]>([]);
+  const [customServices, setCustomServices] = useState<CustomEntry[]>([]);
+  const [materialIds, setMaterialIds] = useState<string[]>([]);
+  const [customMaterials, setCustomMaterials] = useState<CustomEntry[]>([]);
+  const pendingCatalogFiles = useRef(new Map<string, File>());
 
   const specializations = [
     'Modern & Contemporary',
@@ -99,10 +111,14 @@ const DesignerRegistration = () => {
           profile_image: designer.profile_image || '',
           business_type: (designer.business_type as '' | 'google_location' | 'virtual') || '',
           google_location_url: designer.google_location_url || '',
-          services: designer.services && designer.services.length > 0 ? designer.services : [''],
-          materials_expertise: designer.materials_expertise && designer.materials_expertise.length > 0 ? designer.materials_expertise : [''],
           awards: designer.awards && designer.awards.length > 0 ? designer.awards : ['']
         });
+        const savedServices = decodeSelection(designer.services, SERVICE_CATALOG);
+        const savedMaterials = decodeSelection(designer.materials_expertise, MATERIAL_CATALOG);
+        setServiceIds(savedServices.ids);
+        setCustomServices(savedServices.custom);
+        setMaterialIds(savedMaterials.ids);
+        setCustomMaterials(savedMaterials.custom);
 
         if (designer.profile_image) {
           setProfileImagePreview(designer.profile_image);
@@ -145,25 +161,63 @@ const DesignerRegistration = () => {
     if (success) setSuccess(null);
   };
 
-  const handleArrayChange = (field: 'services' | 'materials_expertise' | 'awards', index: number, value: string) => {
+  const handleArrayChange = (field: 'awards', index: number, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: prev[field].map((item, i) => i === index ? value : item)
     }));
   };
 
-  const addArrayField = (field: 'services' | 'materials_expertise' | 'awards') => {
+  const addArrayField = (field: 'awards') => {
     setFormData(prev => ({
       ...prev,
       [field]: [...prev[field], '']
     }));
   };
 
-  const removeArrayField = (field: 'services' | 'materials_expertise' | 'awards', index: number) => {
+  const removeArrayField = (field: 'awards', index: number) => {
     setFormData(prev => ({
       ...prev,
       [field]: prev[field].filter((_, i) => i !== index)
     }));
+  };
+
+  const stageOrUploadCatalogImage = async (file: File) => {
+    if (user) {
+      const safeName = file.name.replace(/[^a-zA-Z0-9.]/g, '');
+      const path = `${user.id}/catalog/${Date.now()}-${safeName}`;
+      const { error: uploadError } = await supabase.storage.from('designer-profiles').upload(path, file, { cacheControl: '3600' });
+      if (uploadError) {
+        setError(uploadError.message);
+        return null;
+      }
+      return supabase.storage.from('designer-profiles').getPublicUrl(path).data.publicUrl;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    pendingCatalogFiles.current.set(previewUrl, file);
+    return previewUrl;
+  };
+
+  const resolveCatalogEntries = async (entries: CustomEntry[], userId: string, hasSession: boolean) => {
+    const resolved: CustomEntry[] = [];
+    for (const entry of entries) {
+      const pending = entry.imageUrl ? pendingCatalogFiles.current.get(entry.imageUrl) : undefined;
+      if (pending && hasSession) {
+        const safeName = pending.name.replace(/[^a-zA-Z0-9.]/g, '');
+        const path = `${userId}/catalog/${Date.now()}-${safeName}`;
+        const { error: uploadError } = await supabase.storage.from('designer-profiles').upload(path, pending, { cacheControl: '3600' });
+        if (!uploadError) {
+          resolved.push({ name: entry.name, imageUrl: supabase.storage.from('designer-profiles').getPublicUrl(path).data.publicUrl });
+          continue;
+        }
+      }
+      resolved.push({
+        name: entry.name,
+        imageUrl: entry.imageUrl && !entry.imageUrl.startsWith('blob:') ? entry.imageUrl : undefined
+      });
+    }
+    return resolved;
   };
 
   const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -446,13 +500,13 @@ const DesignerRegistration = () => {
         profile_image: profileImageUrl,
         business_type: formData.business_type || null,
         google_location_url: formData.business_type === 'google_location' ? formData.google_location_url.trim() : null,
-        services: formData.services.filter(s => s.trim() !== ''),
-        materials_expertise: formData.materials_expertise.filter(m => m.trim() !== ''),
         awards: formData.awards.filter(a => a.trim() !== '')
       };
 
       if (isEditMode && designer) {
-        const result = await updateDesignerProfile(cleanedData);
+        const savedServices = encodeSelection(serviceIds, await resolveCatalogEntries(customServices, designer.user_id, true));
+        const savedMaterials = encodeSelection(materialIds, await resolveCatalogEntries(customMaterials, designer.user_id, true));
+        const result = await updateDesignerProfile({ ...cleanedData, services: savedServices, materials_expertise: savedMaterials });
 
         if (result.error) {
           throw new Error(result.error);
@@ -494,6 +548,8 @@ const DesignerRegistration = () => {
         }
 
         const userId = authData.user.id;
+        const savedServices = encodeSelection(serviceIds, await resolveCatalogEntries(customServices, userId, Boolean(authData.session)));
+        const savedMaterials = encodeSelection(materialIds, await resolveCatalogEntries(customMaterials, userId, Boolean(authData.session)));
 
         // Upload profile image only if we have an authenticated session.
         // When email confirmation is enabled, signUp() returns no session,
@@ -524,8 +580,8 @@ const DesignerRegistration = () => {
             p_profile_image: profileImageUrl,
             p_business_type: cleanedData.business_type,
             p_google_location_url: cleanedData.google_location_url,
-            p_services: cleanedData.services,
-            p_materials_expertise: cleanedData.materials_expertise,
+            p_services: savedServices,
+            p_materials_expertise: savedMaterials,
             p_awards: cleanedData.awards,
           }
         );
@@ -1083,66 +1139,27 @@ const DesignerRegistration = () => {
 
               <div className="bg-gray-50 rounded-lg p-6">
                 <h2 className="text-xl font-semibold text-secondary-800 mb-4">Services Offered</h2>
-                {formData.services.map((service, index) => (
-                  <div key={index} className="flex items-center space-x-2 mb-3">
-                    <input
-                      type="text"
-                      value={service}
-                      onChange={(e) => handleArrayChange('services', index, e.target.value)}
-                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                      placeholder="e.g., 3D Visualization, Space Planning"
-                    />
-                    {formData.services.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeArrayField('services', index)}
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => addArrayField('services')}
-                  className="flex items-center space-x-2 text-primary-600 hover:text-primary-700"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add Service</span>
-                </button>
+                <CatalogPicker
+                  items={SERVICE_CATALOG}
+                  selectedIds={serviceIds}
+                  custom={customServices}
+                  customLabel="Add custom service"
+                  onUploadImage={stageOrUploadCatalogImage}
+                  onChange={(ids, custom) => { setServiceIds(ids); setCustomServices(custom); }}
+                />
               </div>
 
               <div className="bg-gray-50 rounded-lg p-6">
                 <h2 className="text-xl font-semibold text-secondary-800 mb-4">Materials Expertise</h2>
-                {formData.materials_expertise.map((material, index) => (
-                  <div key={index} className="flex items-center space-x-2 mb-3">
-                    <input
-                      type="text"
-                      value={material}
-                      onChange={(e) => handleArrayChange('materials_expertise', index, e.target.value)}
-                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                      placeholder="e.g., Italian Marble, Teak Wood, Quartz"
-                    />
-                    {formData.materials_expertise.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeArrayField('materials_expertise', index)}
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => addArrayField('materials_expertise')}
-                  className="flex items-center space-x-2 text-primary-600 hover:text-primary-700"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add Material</span>
-                </button>
+                <CatalogPicker
+                  items={MATERIAL_CATALOG}
+                  categories={MATERIAL_CATEGORIES}
+                  selectedIds={materialIds}
+                  custom={customMaterials}
+                  customLabel="Add custom material"
+                  onUploadImage={stageOrUploadCatalogImage}
+                  onChange={(ids, custom) => { setMaterialIds(ids); setCustomMaterials(custom); }}
+                />
               </div>
 
               <div className="bg-gray-50 rounded-lg p-6">

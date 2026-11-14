@@ -315,6 +315,7 @@ const ProjectDetailWithTracking = () => {
                     projectId={project.id}
                     currentStatus={project.assignment_status || 'assigned'}
                     onStatusUpdate={handleStatusUpdate}
+                    refreshTrigger={updateRefreshKey}
                   />
                 )}
                 

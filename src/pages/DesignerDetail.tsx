@@ -1,763 +1,370 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import {
-  Star,
-  MapPin,
-  Calendar,
-  Award,
-  Phone,
-  Mail,
-  ArrowLeft,
-  ExternalLink,
-  User,
-  Navigation
-} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Award, BadgeCheck, ExternalLink, Mail, MapPin, Navigation, Phone, Star, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import AuthModal from '../components/AuthModal';
-import type { Designer } from '../lib/supabase';
+import { MATERIAL_CATALOG, SERVICE_CATALOG, resolveSelection } from '../lib/designerCatalog';
 
-interface Testimonial {
+type PublicDesigner = {
   id: string;
-  customer_id: string;
-  project_id: string;
+  name: string;
+  specialization: string;
+  experience: number;
+  location: string;
+  bio?: string;
+  website?: string;
+  profile_image?: string;
+  services: string[];
+  materials_expertise: string[];
+  awards: string[];
+  rating: number;
+  total_reviews: number;
+  is_verified: boolean;
+  google_location_url?: string;
+};
+
+type Review = {
+  id: string;
   rating: number;
   title: string;
   comment: string;
   would_recommend: boolean;
-  verified_purchase: boolean;
   created_at: string;
-  customer_name?: string;
-  project_name?: string;
-}
+  customer_name: string;
+  project_name: string;
+};
 
-const DesignerDetail = () => {
+type PortfolioProject = {
+  id: string;
+  project_name: string | null;
+  property_type: string | null;
+  location: string | null;
+  completion_date: string | null;
+  image_url: string | null;
+  photos: string[];
+};
+
+type PaidContact = {
+  phone: string | null;
+  email: string | null;
+  starting_price: string | null;
+};
+
+const publicColumns = 'id, name, specialization, experience, location, bio, website, profile_image, services, materials_expertise, awards, rating, total_reviews, is_verified, google_location_url';
+
+export default function DesignerDetail() {
   const { id } = useParams();
   const { user, isDesigner } = useAuth();
   const navigate = useNavigate();
-
-  const [designer, setDesigner] = useState<Designer | null>(null);
-  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [designer, setDesigner] = useState<PublicDesigner | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [projects, setProjects] = useState<PortfolioProject[]>([]);
+  const [completedCount, setCompletedCount] = useState(0);
+  const [contact, setContact] = useState<PaidContact | null>(null);
+  const [activeProject, setActiveProject] = useState<PortfolioProject | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
 
   useEffect(() => {
-    if (id) {
-      fetchDesigner(id);
-    }
-  }, [id]);
-
-  const fetchDesigner = async (designerId: string) => {
-    try {
+    if (!id) return;
+    let active = true;
+    const load = async () => {
       setLoading(true);
       setError(null);
-
-      const { data, error } = await supabase
+      const { data, error: designerError } = await supabase
         .from('designers')
-        .select('*')
-        .eq('id', designerId)
+        .select(publicColumns)
+        .eq('id', id)
         .eq('is_active', true)
         .maybeSingle();
-
-      if (error) {
-        console.error('Supabase error:', error);
-        throw error;
-      }
-
-      if (!data) {
-        setError('Designer not found');
+      if (!active) return;
+      if (designerError || !data) {
+        setError(designerError?.message || 'Designer not found');
+        setLoading(false);
         return;
       }
+      setDesigner(data as PublicDesigner);
 
-      setDesigner(data);
+      const [{ data: reviewRows }, { data: portfolio }] = await Promise.all([
+        supabase.from('reviews').select('id, rating, title, comment, would_recommend, created_at, project_id').eq('designer_id', id).order('created_at', { ascending: false }),
+        supabase.rpc('get_designer_portfolio', { p_designer_id: id })
+      ]);
+      if (!active) return;
+      const portfolioBody = portfolio as { total?: number; projects?: PortfolioProject[] } | null;
+      setCompletedCount(portfolioBody?.total || 0);
+      setProjects(portfolioBody?.projects || []);
 
-      const { data: reviewsData, error: reviewsError } = await supabase
-        .from('reviews')
-        .select(`
-          id,
-          customer_id,
-          project_id,
-          rating,
-          title,
-          comment,
-          would_recommend,
-          verified_purchase,
-          created_at
-        `)
-        .eq('designer_id', designerId)
-        .order('created_at', { ascending: false });
-
-      if (reviewsError) {
-        console.error('Error fetching reviews:', reviewsError);
-      } else if (reviewsData) {
-        const enrichedTestimonials = await Promise.all(
-          reviewsData.map(async (review) => {
-            let customerName = 'Anonymous';
-            let projectName = 'Project';
-
-            const { data: projectData } = await supabase
-              .from('customers')
-              .select('name, project_name')
-              .eq('id', review.project_id)
-              .maybeSingle();
-
-            if (projectData) {
-              customerName = projectData.name;
-              projectName = projectData.project_name;
-            }
-
-            return {
-              ...review,
-              customer_name: customerName,
-              project_name: projectName
-            };
-          })
-        );
-
-        setTestimonials(enrichedTestimonials);
+      const mapped = await Promise.all((reviewRows || []).map(async (review) => {
+        const { data: project } = await supabase.from('customers').select('name, project_name').eq('id', review.project_id).maybeSingle();
+        return {
+          id: review.id,
+          rating: review.rating,
+          title: review.title,
+          comment: review.comment,
+          would_recommend: review.would_recommend,
+          created_at: review.created_at,
+          customer_name: project?.name || 'Homeowner',
+          project_name: project?.project_name || 'Project'
+        };
+      }));
+      if (active) {
+        setReviews(mapped);
+        setLoading(false);
       }
-    } catch (error: any) {
-      console.error('Error fetching designer:', error);
-      setError(error.message || 'Failed to load designer details');
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+    load();
+    return () => { active = false; };
+  }, [id]);
 
-  const handleContactAction = (
-    action: 'phone' | 'email' | 'website'
-  ) => {
-    if (!user) {
-      setShowAuthModal(true);
+  useEffect(() => {
+    if (!id || !user) {
+      setContact(null);
       return;
     }
-
-    if (!designer) return;
-
-    switch (action) {
-      case 'phone':
-        if (designer.phone) {
-          window.open(`tel:${designer.phone}`, '_self');
-        }
-        break;
-
-      case 'email':
-        window.open(`mailto:${designer.email}`, '_self');
-        break;
-
-      case 'website':
-        if (designer.website) {
-          const url = designer.website.startsWith('http')
-            ? designer.website
-            : `https://${designer.website}`;
-
-          window.open(url, '_blank', 'noopener,noreferrer');
-        }
-        break;
-    }
-  };
-
-  const handleGetDirections = () => {
-    if (!designer?.google_location_url) return;
-
-    const url = designer.google_location_url.startsWith('http')
-      ? designer.google_location_url
-      : `https://maps.google.com/?q=${encodeURIComponent(
-          designer.google_location_url
-        )}`;
-
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
-
-  const handleGetQuote = () => {
-    if (!user) {
-      setShowAuthModal(true);
-      return;
-    }
-
-    navigate('/register-customer');
-  };
+    let active = true;
+    supabase.rpc('get_paid_designer_contact', { p_designer_id: id }).then(({ data }) => {
+      if (!active) return;
+      const row = Array.isArray(data) ? data[0] : data;
+      setContact(row && (row.phone || row.email || row.starting_price) ? row : null);
+    });
+    return () => { active = false; };
+  }, [id, user]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
-
-          <p className="text-gray-600">
-            Loading designer details...
-          </p>
-        </div>
-      </div>
-    );
+    return <div className="flex min-h-screen items-center justify-center bg-[#F8F7F4] text-[#172B45]">Loading designer profile...</div>;
   }
 
   if (error || !designer) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-
-          <div className="bg-red-50 border border-red-200 text-red-600 px-6 py-4 rounded-lg mb-4">
-            <p className="font-medium">
-              Error loading designer details
-            </p>
-
-            <p className="text-sm">
-              {error || 'Designer not found'}
-            </p>
-          </div>
-
-          <Link
-            to="/designers"
-            className="btn-primary"
-          >
-            Back to Designers
-          </Link>
-
-        </div>
-      </div>
-    );
+    return <div className="flex min-h-screen items-center justify-center bg-[#F8F7F4] text-[#172B45]">{error || 'Designer not found'}</div>;
   }
 
-  const mockPortfolio = designer.portfolio_images.map(
-    (image, index) => ({
-      id: index + 1,
-      title: `Project ${index + 1}`,
-      image: image,
-      category: 'Residential'
-    })
-  );
+  const services = resolveSelection(designer.services, SERVICE_CATALOG);
+  const materials = resolveSelection(designer.materials_expertise, MATERIAL_CATALOG);
+  const materialGroups = [...services.selected, ...services.custom].length >= 0
+    ? [...materials.selected, ...materials.custom].reduce<Record<string, typeof materials.selected>>((groups, item) => {
+      const key = item.category || 'Other';
+      groups[key] = [...(groups[key] || []), item];
+      return groups;
+    }, {})
+    : {};
+  const serviceCards = [...services.selected, ...services.custom];
+
+  const requestQuote = () => {
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
+    navigate('/register-customer');
+  };
+
+  const openExternal = (value: string) => {
+    const url = value.startsWith('http') ? value : `https://${value}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
 
   return (
-    <>
-      <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F8F7F4] text-[#172B45]">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+        <button type="button" onClick={() => navigate(-1)} className="mb-4 inline-flex items-center gap-2 text-sm">
+          <ArrowLeft className="h-4 w-4" /> Back
+        </button>
 
-        {/* Header */}
-        <div className="bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-
-            <Link
-              to="/designers"
-              className="inline-flex items-center text-primary-600 hover:text-primary-700 mb-4 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Designers
-            </Link>
-
-          </div>
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-            {/* =====================================================
-                MAIN CONTENT
-            ====================================================== */}
-
-            <div className="lg:col-span-2 space-y-8">
-
-              {/* Designer Info */}
-              <div className="bg-white rounded-xl shadow-lg p-8">
-
-                <div className="flex flex-col md:flex-row items-start space-y-6 md:space-y-0 md:space-x-8">
-
-                  {/* Profile Image */}
-                  <div className="w-32 h-32 mx-auto md:mx-0 flex-shrink-0">
-
-                    {designer.profile_image ? (
-                      <img
-                        src={designer.profile_image}
-                        alt={designer.name}
-                        className="w-full h-full rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-primary-500 rounded-full flex items-center justify-center">
-                        <User className="w-16 h-16 text-white" />
-                      </div>
-                    )}
-
-                  </div>
-
-                  {/* Designer Details */}
-                  <div className="flex-1 text-center md:text-left">
-
-                    <div className="flex items-center justify-center md:justify-start space-x-3 mb-2">
-
-                      <h1 className="text-3xl font-bold text-secondary-800">
-                        {designer.name}
-                      </h1>
-
-                      {designer.is_verified && (
-                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
-                          Verified
-                        </span>
-                      )}
-
-                    </div>
-
-                    <p className="text-xl text-primary-600 font-medium mb-4">
-                      {designer.specialization}
-                    </p>
-
-                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mb-4 text-gray-600">
-
-                      <div className="flex items-center space-x-1">
-                        <MapPin className="w-4 h-4" />
-                        <span>{designer.location}</span>
-                      </div>
-
-                      <div className="flex items-center space-x-1">
-                        <Calendar className="w-4 h-4" />
-                        <span>
-                          {designer.experience} years experience
-                        </span>
-                      </div>
-
-                      <div className="flex items-center space-x-1">
-                        <Award className="w-4 h-4" />
-                        <span>
-                          {designer.total_projects} projects completed
-                        </span>
-                      </div>
-
-                    </div>
-
-                    <div className="flex items-center justify-center md:justify-start space-x-4 mb-6">
-
-                      <div className="flex items-center space-x-2">
-
-                        <div className="flex items-center">
-
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-5 h-5 ${
-                                i < Math.floor(designer.rating)
-                                  ? 'text-yellow-400 fill-current'
-                                  : 'text-gray-300'
-                              }`}
-                            />
-                          ))}
-
-                        </div>
-
-                        <span className="font-semibold">
-                          {designer.rating}
-                        </span>
-
-                        <span className="text-gray-600">
-                          ({designer.total_reviews} reviews)
-                        </span>
-
-                      </div>
-
-                    </div>
-
-                    {designer.bio && (
-                      <p className="text-gray-600 leading-relaxed">
-                        {designer.bio}
-                      </p>
-                    )}
-
-                  </div>
-                </div>
+        <section className="rounded-3xl bg-white p-6 shadow-sm sm:p-8">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
+            {designer.profile_image ? (
+              <img src={designer.profile_image} alt="" className="h-28 w-28 rounded-2xl object-cover" />
+            ) : (
+              <div className="flex h-28 w-28 items-center justify-center rounded-2xl bg-stone-100 text-3xl font-semibold">{designer.name.slice(0, 1)}</div>
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-3xl font-semibold">{designer.name}</h1>
+                {designer.is_verified && <span className="inline-flex items-center gap-1 rounded-full bg-[#F8F7F4] px-2 py-1 text-xs font-medium"><BadgeCheck className="h-4 w-4 text-[#D96C4D]" /> Verified</span>}
               </div>
+              <p className="mt-2 text-lg">{designer.specialization}</p>
+              <p className="mt-1 inline-flex items-center gap-1 text-sm text-gray-600"><MapPin className="h-4 w-4" /> {designer.location}</p>
+            </div>
+          </div>
+          <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+            {[
+              [designer.experience || 0, 'Years of experience'],
+              [completedCount, 'Completed projects'],
+              [designer.rating || 0, 'Customer rating'],
+              [designer.total_reviews || reviews.length, 'Customer reviews']
+            ].map(([value, label]) => (
+              <div key={String(label)} className="rounded-2xl bg-[#F8F7F4] p-4">
+                <p className="text-2xl font-semibold">{value}</p>
+                <p className="text-sm text-gray-600">{label}</p>
+              </div>
+            ))}
+          </div>
+        </section>
 
-              {/* Services */}
-              {designer.services &&
-                designer.services.length > 0 && (
-                  <div className="bg-white rounded-xl shadow-lg p-8">
+        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="space-y-6">
+            <section className="rounded-3xl bg-white p-6 shadow-sm">
+              <h2 className="text-xl font-semibold">About the designer</h2>
+              <p className="mt-3 whitespace-pre-line leading-7 text-gray-700">{designer.bio || 'This designer has not added a description yet.'}</p>
+            </section>
 
-                    <h2 className="text-2xl font-bold text-secondary-800 mb-6">
-                      Services Offered
-                    </h2>
-
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-
-                      {designer.services.map(
-                        (service, index) => (
-                          <div
-                            key={index}
-                            className="bg-primary-50 text-primary-800 px-4 py-3 rounded-lg text-center font-medium"
-                          >
-                            {service}
-                          </div>
-                        )
-                      )}
-
-                    </div>
-                  </div>
-                )}
-
-              {/* Portfolio */}
-              {mockPortfolio.length > 0 && (
-                <div className="bg-white rounded-xl shadow-lg p-8">
-
-                  <h2 className="text-2xl font-bold text-secondary-800 mb-6">
-                    Portfolio
-                  </h2>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-                    {mockPortfolio.map((project) => (
-                      <div
-                        key={project.id}
-                        className="group relative"
-                      >
-
-                        <div className="relative overflow-hidden rounded-lg">
-
-                          <img
-                            src={project.image}
-                            alt={project.title}
-                            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                            <ExternalLink className="w-8 h-8 text-white" />
-                          </div>
-
-                        </div>
-
-                        <h3 className="text-lg font-semibold text-secondary-800 mt-3 group-hover:text-primary-600 transition-colors">
-                          {project.title}
-                        </h3>
-
-                        <p className="text-gray-600">
-                          {project.category}
-                        </p>
-
+            <section className="rounded-3xl bg-white p-6 shadow-sm">
+              <h2 className="text-xl font-semibold">Services offered</h2>
+              {serviceCards.length === 0 ? <p className="mt-3 text-gray-600">No services listed yet.</p> : (
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  {serviceCards.map((item) => (
+                    <article key={item.id} className="overflow-hidden rounded-2xl border border-stone-200">
+                      {item.image && <img src={item.image} alt={item.name} loading="lazy" className="h-36 w-full object-cover" />}
+                      <div className="p-4">
+                        <h3 className="font-semibold">{item.name}</h3>
+                        <p className="mt-1 text-sm text-gray-600">{item.description}</p>
                       </div>
-                    ))}
-
-                  </div>
+                    </article>
+                  ))}
                 </div>
               )}
+            </section>
 
-              {/* Materials Expertise */}
-              {designer.materials_expertise &&
-                designer.materials_expertise.length > 0 && (
-                  <div className="bg-white rounded-xl shadow-lg p-8">
-
-                    <h2 className="text-2xl font-bold text-secondary-800 mb-6">
-                      Materials Expertise
-                    </h2>
-
-                    <div className="flex flex-wrap gap-3">
-
-                      {designer.materials_expertise.map(
-                        (material, index) => (
-                          <span
-                            key={index}
-                            className="bg-accent-100 text-accent-800 px-4 py-2 rounded-full text-sm font-medium"
-                          >
-                            {material}
-                          </span>
-                        )
-                      )}
-
-                    </div>
-                  </div>
-                )}
-
-              {/* Testimonials */}
-              <div className="bg-white rounded-xl shadow-lg p-8">
-
-                <h2 className="text-2xl font-bold text-secondary-800 mb-6">
-                  Client Testimonials
-                </h2>
-
-                {testimonials.length > 0 ? (
-                  <div className="space-y-6">
-
-                    {testimonials.map((testimonial) => (
-                      <div
-                        key={testimonial.id}
-                        className="border-l-4 border-primary-500 pl-6"
-                      >
-
-                        <div className="flex items-start justify-between mb-3">
-
-                          <div>
-
-                            <h3 className="font-bold text-lg text-secondary-800 mb-1">
-                              {testimonial.title}
-                            </h3>
-
-                            <div className="flex items-center space-x-2 mb-2">
-
-                              <div className="flex items-center">
-
-                                {[...Array(5)].map(
-                                  (_, i) => (
-                                    <Star
-                                      key={i}
-                                      className={`w-4 h-4 ${
-                                        i < testimonial.rating
-                                          ? 'text-yellow-400 fill-current'
-                                          : 'text-gray-300'
-                                      }`}
-                                    />
-                                  )
-                                )}
-
-                              </div>
-
-                              <span className="font-semibold text-secondary-800">
-                                {testimonial.customer_name}
-                              </span>
-
-                              {testimonial.verified_purchase && (
-                                <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium">
-                                  Verified
-                                </span>
-                              )}
-
-                            </div>
-
-                          </div>
-
-                          <span className="text-xs text-gray-500">
-
-                            {new Date(
-                              testimonial.created_at
-                            ).toLocaleDateString(
-                              'en-US',
-                              {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric'
-                              }
-                            )}
-
-                          </span>
-
-                        </div>
-
-                        <p className="text-gray-700 mb-3 leading-relaxed">
-                          {testimonial.comment}
-                        </p>
-
-                        <div className="flex items-center justify-between">
-
-                          <p className="text-sm text-primary-600 font-medium">
-                            Project: {testimonial.project_name}
-                          </p>
-
-                          {testimonial.would_recommend && (
-                            <span className="text-sm text-green-600 font-medium flex items-center">
-                              <span className="mr-1">
-                                ✓
-                              </span>
-                              Recommends
-                            </span>
-                          )}
-
-                        </div>
-
-                      </div>
+            <section className="rounded-3xl bg-white p-6 shadow-sm">
+              <h2 className="text-xl font-semibold">Materials expertise</h2>
+              {Object.keys(materialGroups).length === 0 ? <p className="mt-3 text-gray-600">No materials listed yet.</p> : Object.entries(materialGroups).map(([category, items]) => (
+                <div key={category} className="mt-5">
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-[#D96C4D]">{category}</h3>
+                  <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    {items.map((item) => (
+                      <article key={item.id} className="overflow-hidden rounded-2xl border border-stone-200">
+                        {item.image && <img src={item.image} alt={item.name} loading="lazy" className="h-24 w-full object-cover" />}
+                        <p className="p-3 text-sm font-medium">{item.name}</p>
+                      </article>
                     ))}
-
-                  </div>
-                ) : (
-                  <p className="text-gray-600 text-center py-8">
-                    No testimonials yet.
-                  </p>
-                )}
-
-              </div>
-
-            </div>
-
-            {/* =====================================================
-                SIDEBAR
-            ====================================================== */}
-
-            <div className="space-y-6">
-
-              {/* =================================================
-                  CONTACT DESIGNER CARD
-              ================================================== */}
-
-              <div className="bg-white rounded-xl shadow-lg p-6 sticky top-24">
-
-                {/* Header */}
-                <div className="pb-5 border-b border-gray-100">
-                  <h3 className="text-xl font-bold text-secondary-800 leading-tight">
-                    Contact Designer
-                  </h3>
-
-                  <div className="mt-2.5 flex items-center">
-                    <span className="block w-10 h-[2px] bg-primary-500 rounded-full"></span>
                   </div>
                 </div>
+              ))}
+            </section>
 
-                {/* Starting Price */}
-                {designer.starting_price && (
-                  <div className="py-5 border-b border-gray-100">
-                    <p className="text-sm font-medium text-gray-500 mb-1">
-                      Starting From
-                    </p>
-
-                    <p className="text-2xl font-bold text-primary-600 leading-none">
-                      {designer.starting_price}
-                    </p>
-                  </div>
-                )}
-
-                {/* Contact Details */}
-                {user ? (
-                  <div className="pt-4">
-
-                    <div className="space-y-1">
-
-                      {/* Phone */}
-                      {designer.phone && (
-                        <button
-                          type="button"
-                          onClick={() => handleContactAction('phone')}
-                          className="w-full flex items-center gap-3 px-2 py-2.5 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-primary-600 transition-all duration-200 text-left"
-                        >
-                          <span className="w-8 h-8 rounded-md bg-gray-50 flex items-center justify-center flex-shrink-0">
-                            <Phone className="w-4 h-4" />
-                          </span>
-
-                          <span className="text-sm font-medium truncate">
-                            {designer.phone}
-                          </span>
-                        </button>
-                      )}
-
-                      {/* Email */}
-                      <button
-                        type="button"
-                        onClick={() => handleContactAction('email')}
-                        className="w-full flex items-center gap-3 px-2 py-2.5 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-primary-600 transition-all duration-200 text-left"
-                      >
-                        <span className="w-8 h-8 rounded-md bg-gray-50 flex items-center justify-center flex-shrink-0">
-                          <Mail className="w-4 h-4" />
-                        </span>
-
-                        <span className="text-sm font-medium truncate">
-                          {designer.email}
-                        </span>
-                      </button>
-
-                      {/* Website */}
-                      {designer.website && (
-                        <button
-                          type="button"
-                          onClick={() => handleContactAction('website')}
-                          className="w-full flex items-center gap-3 px-2 py-2.5 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-primary-600 transition-all duration-200 text-left"
-                        >
-                          <span className="w-8 h-8 rounded-md bg-gray-50 flex items-center justify-center flex-shrink-0">
-                            <ExternalLink className="w-4 h-4" />
-                          </span>
-
-                          <span className="text-sm font-medium truncate">
-                            {designer.website}
-                          </span>
-                        </button>
-                      )}
-
-                    </div>
-
-                    {/* Get Directions */}
-                    {designer.google_location_url && (
-                      <button
-                        type="button"
-                        onClick={handleGetDirections}
-                        className="w-full mt-5 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2.5 px-4 rounded-lg font-semibold text-sm transition-all duration-200"
-                      >
-                        <Navigation className="w-4 h-4" />
-                        <span>Get Directions</span>
-                      </button>
-                    )}
-
-                  </div>
-                ) : (
-                  <div className="mt-5 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <p className="text-blue-800 text-sm text-center leading-relaxed">
-                      Please sign in to view contact information and get in touch with this designer.
-                    </p>
-                  </div>
-                )}
-
-                {/* Get Quote */}
-                {user && !isDesigner && (
-                  <div className="mt-5 pt-5 border-t border-gray-100">
-                    <button
-                      type="button"
-                      onClick={handleGetQuote}
-                      className="w-full btn-primary"
-                    >
-                      Get Quote
+            <section className="rounded-3xl bg-white p-6 shadow-sm">
+              <h2 className="text-xl font-semibold">Recent completed projects</h2>
+              {projects.length === 0 ? (
+                <p className="mt-3 text-gray-600">Your completed projects will appear here once you complete your first project.</p>
+              ) : (
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  {projects.map((project) => (
+                    <button key={project.id} type="button" onClick={() => setActiveProject(project)} className="overflow-hidden rounded-2xl border border-stone-200 text-left">
+                      {(project.image_url || project.photos?.[0]) && <img src={project.image_url || project.photos[0]} alt="" loading="lazy" className="h-40 w-full object-cover" />}
+                      <div className="p-4">
+                        <h3 className="font-semibold">{project.project_name || 'Completed project'}</h3>
+                        <p className="mt-1 text-sm text-gray-600">{[project.property_type, project.location].filter(Boolean).join(' · ')}</p>
+                        {project.completion_date && <p className="mt-1 text-sm text-gray-500">{new Date(project.completion_date).toLocaleDateString('en-IN')}</p>}
+                      </div>
                     </button>
-                  </div>
-                )}
+                  ))}
+                </div>
+              )}
+            </section>
 
-              </div>
-
-              {/* Awards */}
-              {designer.awards &&
-                designer.awards.length > 0 && (
-                  <div className="bg-white rounded-xl shadow-lg p-6">
-
-                    <h3 className="text-xl font-bold text-secondary-800 mb-4">
-                      Awards & Recognition
-                    </h3>
-
-                    <div className="space-y-3">
-
-                      {designer.awards.map(
-                        (award, index) => (
-                          <div
-                            key={index}
-                            className="flex items-start space-x-3"
-                          >
-
-                            <Award className="w-5 h-5 text-primary-600 mt-0.5 flex-shrink-0" />
-
-                            <p className="text-gray-600 text-sm">
-                              {award}
-                            </p>
-
-                          </div>
-                        )
-                      )}
-
-                    </div>
-
-                  </div>
-                )}
-
-            </div>
-
+            <section className="rounded-3xl bg-white p-6 shadow-sm">
+              <h2 className="text-xl font-semibold">Customer reviews</h2>
+              {reviews.length === 0 ? <p className="mt-3 text-gray-600">No reviews yet.</p> : (
+                <div className="mt-4 space-y-4">
+                  {reviews.map((review) => (
+                    <article key={review.id} className="rounded-2xl bg-[#F8F7F4] p-4">
+                      <div className="flex items-center gap-1 text-[#D96C4D]">{Array.from({ length: review.rating }).map((_, index) => <Star key={index} className="h-4 w-4 fill-current" />)}</div>
+                      <h3 className="mt-2 font-semibold">{review.title}</h3>
+                      <p className="mt-1 text-sm leading-6 text-gray-700">{review.comment}</p>
+                      <p className="mt-2 text-sm text-gray-500">{review.customer_name} · {review.project_name}</p>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
           </div>
 
-        </div>
+          <aside className="space-y-6">
+            {contact && (
+              <div className="sticky top-24 rounded-xl bg-white p-6 shadow-lg">
+                <div className="border-b border-gray-100 pb-5">
+                  <h3 className="text-xl font-bold leading-tight">Contact Designer</h3>
+                  <span className="mt-2.5 block h-[2px] w-10 rounded-full bg-[#D96C4D]" />
+                </div>
+                {contact.starting_price && (
+                  <div className="border-b border-gray-100 py-5">
+                    <p className="mb-1 text-sm font-medium text-gray-500">Starting From</p>
+                    <p className="text-2xl font-bold leading-none text-[#D96C4D]">{contact.starting_price}</p>
+                  </div>
+                )}
+                <div className="space-y-1 pt-4">
+                  {contact.phone && (
+                    <a href={`tel:${contact.phone}`} className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left text-gray-600 hover:bg-gray-50">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-md bg-gray-50"><Phone className="h-4 w-4" /></span>
+                      <span className="truncate text-sm font-medium">{contact.phone}</span>
+                    </a>
+                  )}
+                  {contact.email && (
+                    <a href={`mailto:${contact.email}`} className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left text-gray-600 hover:bg-gray-50">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-md bg-gray-50"><Mail className="h-4 w-4" /></span>
+                      <span className="truncate text-sm font-medium">{contact.email}</span>
+                    </a>
+                  )}
+                  {designer.website && (
+                    <button type="button" onClick={() => openExternal(designer.website!)} className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left text-gray-600 hover:bg-gray-50">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-md bg-gray-50"><ExternalLink className="h-4 w-4" /></span>
+                      <span className="truncate text-sm font-medium">{designer.website}</span>
+                    </button>
+                  )}
+                </div>
+                {designer.google_location_url && (
+                  <button type="button" onClick={() => openExternal(designer.google_location_url!.startsWith('http') ? designer.google_location_url! : `https://maps.google.com/?q=${encodeURIComponent(designer.google_location_url!)}`)} className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white">
+                    <Navigation className="h-4 w-4" /> Get Directions
+                  </button>
+                )}
+                {user && !isDesigner && (
+                  <div className="mt-5 border-t border-gray-100 pt-5">
+                    <button type="button" onClick={requestQuote} className="btn-primary w-full">Get Quote</button>
+                  </div>
+                )}
+              </div>
+            )}
 
+            {user && !isDesigner && !contact && (
+              <button type="button" onClick={requestQuote} className="btn-primary w-full">Get Quote</button>
+            )}
+
+            {designer.awards?.length > 0 && (
+              <div className="rounded-xl bg-white p-6 shadow-sm">
+                <h3 className="mb-4 text-xl font-bold">Awards & Recognition</h3>
+                <div className="space-y-3">
+                  {designer.awards.map((award) => (
+                    <div key={award} className="flex items-start gap-3 text-sm text-gray-600"><Award className="mt-0.5 h-5 w-5 flex-shrink-0" />{award}</div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </aside>
+        </div>
       </div>
 
-      {/* Auth Modal */}
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        mode={authMode}
-        onModeChange={setAuthMode}
-        onAuthSuccess={() => {
-          setShowAuthModal(false);
+      {activeProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-semibold">{activeProject.project_name || 'Completed project'}</h2>
+                <p className="mt-1 text-sm text-gray-600">{[activeProject.property_type, activeProject.location].filter(Boolean).join(' · ')}</p>
+              </div>
+              <button type="button" onClick={() => setActiveProject(null)} aria-label="Close"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {[...(activeProject.image_url ? [activeProject.image_url] : []), ...(Array.isArray(activeProject.photos) ? activeProject.photos : [])].filter((photo) => photo).map((photo) => (
+                <img key={photo} src={photo!} alt="" className="h-48 w-full rounded-2xl object-cover" />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
-          // Refresh the page to show contact info
-          window.location.reload();
-        }}
-      />
-
-    </>
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} mode={authMode} onModeChange={setAuthMode} onAuthSuccess={() => setShowAuthModal(false)} />
+    </div>
   );
-};
-
-export default DesignerDetail;
+}

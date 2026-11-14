@@ -44,7 +44,8 @@ BEGIN
     WHERE tablename = 'quote_acceptance_history' 
     AND policyname = 'Designers can view acceptance history for their quotes'
   ) THEN
-    CREATE POLICY "Designers can view acceptance history for their quotes"
+    DROP POLICY IF EXISTS "Designers can view acceptance history for their quotes" ON quote_acceptance_history;
+CREATE POLICY "Designers can view acceptance history for their quotes"
       ON quote_acceptance_history
       FOR SELECT
       TO authenticated
@@ -64,7 +65,8 @@ BEGIN
     WHERE tablename = 'quote_acceptance_history' 
     AND policyname = 'Customers can view acceptance history for their quotes'
   ) THEN
-    CREATE POLICY "Customers can view acceptance history for their quotes"
+    DROP POLICY IF EXISTS "Customers can view acceptance history for their quotes" ON quote_acceptance_history;
+CREATE POLICY "Customers can view acceptance history for their quotes"
       ON quote_acceptance_history
       FOR SELECT
       TO authenticated
@@ -84,7 +86,8 @@ BEGIN
     WHERE tablename = 'quote_acceptance_history' 
     AND policyname = 'System can insert acceptance history'
   ) THEN
-    CREATE POLICY "System can insert acceptance history"
+    DROP POLICY IF EXISTS "System can insert acceptance history" ON quote_acceptance_history;
+CREATE POLICY "System can insert acceptance history"
       ON quote_acceptance_history
       FOR INSERT
       TO authenticated
@@ -106,6 +109,7 @@ BEGIN
 END $$;
 
 -- Create policies for designer_quotes
+DROP POLICY IF EXISTS "Customers can view quotes for their projects" ON designer_quotes;
 CREATE POLICY "Customers can view quotes for their projects"
   ON designer_quotes
   FOR SELECT
@@ -126,7 +130,8 @@ BEGIN
     WHERE tablename = 'designer_quotes' 
     AND policyname = 'Customers can accept or reject quotes'
   ) THEN
-    CREATE POLICY "Customers can accept or reject quotes"
+    DROP POLICY IF EXISTS "Customers can accept or reject quotes" ON designer_quotes;
+CREATE POLICY "Customers can accept or reject quotes"
       ON designer_quotes
       FOR UPDATE
       TO authenticated

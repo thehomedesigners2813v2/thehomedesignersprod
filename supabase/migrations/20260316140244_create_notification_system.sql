@@ -74,23 +74,27 @@ ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE email_notifications ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for notifications
+DROP POLICY IF EXISTS "Users can view own notifications" ON notifications;
 CREATE POLICY "Users can view own notifications"
   ON notifications FOR SELECT
   TO authenticated
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own notifications" ON notifications;
 CREATE POLICY "Users can update own notifications"
   ON notifications FOR UPDATE
   TO authenticated
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "System can insert notifications" ON notifications;
 CREATE POLICY "System can insert notifications"
   ON notifications FOR INSERT
   TO authenticated
   WITH CHECK (true);
 
 -- RLS Policies for email_notifications (admin/system only)
+DROP POLICY IF EXISTS "Only system can manage email notifications" ON email_notifications;
 CREATE POLICY "Only system can manage email notifications"
   ON email_notifications FOR ALL
   TO authenticated
@@ -238,6 +242,7 @@ The Home Designers Team'
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trigger_notify_on_project_creation ON customers;
 CREATE TRIGGER trigger_notify_on_project_creation
 AFTER INSERT ON customers
 FOR EACH ROW
@@ -323,6 +328,7 @@ The Home Designers Team'
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trigger_notify_on_quote_request ON customers;
 CREATE TRIGGER trigger_notify_on_quote_request
 AFTER UPDATE ON customers
 FOR EACH ROW
@@ -405,6 +411,7 @@ The Home Designers Team'
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trigger_notify_on_quotation_submitted ON designer_quotes;
 CREATE TRIGGER trigger_notify_on_quotation_submitted
 AFTER INSERT ON designer_quotes
 FOR EACH ROW
@@ -491,6 +498,7 @@ The Home Designers Team'
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trigger_notify_on_quotation_accepted ON designer_quotes;
 CREATE TRIGGER trigger_notify_on_quotation_accepted
 AFTER UPDATE ON designer_quotes
 FOR EACH ROW
@@ -561,6 +569,7 @@ The Home Designers Team'
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trigger_notify_on_project_status_update ON customers;
 CREATE TRIGGER trigger_notify_on_project_status_update
 AFTER UPDATE ON customers
 FOR EACH ROW

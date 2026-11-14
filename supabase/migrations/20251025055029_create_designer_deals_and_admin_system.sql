@@ -144,6 +144,7 @@ ALTER TABLE designer_projects_earnings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE deal_redemptions ENABLE ROW LEVEL SECURITY;
 
 -- Admin users policies
+DROP POLICY IF EXISTS "Only super admins can manage admin users" ON admin_users;
 CREATE POLICY "Only super admins can manage admin users"
   ON admin_users
   FOR ALL
@@ -165,6 +166,7 @@ CREATE POLICY "Only super admins can manage admin users"
     )
   );
 
+DROP POLICY IF EXISTS "Admins can read own profile" ON admin_users;
 CREATE POLICY "Admins can read own profile"
   ON admin_users
   FOR SELECT
@@ -172,6 +174,7 @@ CREATE POLICY "Admins can read own profile"
   USING (user_id = auth.uid());
 
 -- Designer deals policies
+DROP POLICY IF EXISTS "Admins can manage all deals" ON designer_deals;
 CREATE POLICY "Admins can manage all deals"
   ON designer_deals
   FOR ALL
@@ -193,6 +196,7 @@ CREATE POLICY "Admins can manage all deals"
     )
   );
 
+DROP POLICY IF EXISTS "Designers can manage own deals" ON designer_deals;
 CREATE POLICY "Designers can manage own deals"
   ON designer_deals
   FOR ALL
@@ -208,6 +212,7 @@ CREATE POLICY "Designers can manage own deals"
     )
   );
 
+DROP POLICY IF EXISTS "Public can read active deals" ON designer_deals;
 CREATE POLICY "Public can read active deals"
   ON designer_deals
   FOR SELECT
@@ -219,6 +224,7 @@ CREATE POLICY "Public can read active deals"
   );
 
 -- Designer earnings policies
+DROP POLICY IF EXISTS "Admins can manage all earnings" ON designer_projects_earnings;
 CREATE POLICY "Admins can manage all earnings"
   ON designer_projects_earnings
   FOR ALL
@@ -240,6 +246,7 @@ CREATE POLICY "Admins can manage all earnings"
     )
   );
 
+DROP POLICY IF EXISTS "Designers can view own earnings" ON designer_projects_earnings;
 CREATE POLICY "Designers can view own earnings"
   ON designer_projects_earnings
   FOR SELECT
@@ -251,18 +258,21 @@ CREATE POLICY "Designers can view own earnings"
   );
 
 -- Deal redemptions policies
+DROP POLICY IF EXISTS "Customers can view own redemptions" ON deal_redemptions;
 CREATE POLICY "Customers can view own redemptions"
   ON deal_redemptions
   FOR SELECT
   TO authenticated
   USING (customer_id = auth.uid());
 
+DROP POLICY IF EXISTS "Customers can redeem deals" ON deal_redemptions;
 CREATE POLICY "Customers can redeem deals"
   ON deal_redemptions
   FOR INSERT
   TO authenticated
   WITH CHECK (customer_id = auth.uid());
 
+DROP POLICY IF EXISTS "Admins can view all redemptions" ON deal_redemptions;
 CREATE POLICY "Admins can view all redemptions"
   ON deal_redemptions
   FOR SELECT
@@ -276,16 +286,19 @@ CREATE POLICY "Admins can view all redemptions"
   );
 
 -- Triggers for updated_at
+DROP TRIGGER IF EXISTS update_admin_users_updated_at ON admin_users;
 CREATE TRIGGER update_admin_users_updated_at
   BEFORE UPDATE ON admin_users
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_designer_deals_updated_at ON designer_deals;
 CREATE TRIGGER update_designer_deals_updated_at
   BEFORE UPDATE ON designer_deals
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_designer_projects_earnings_updated_at ON designer_projects_earnings;
 CREATE TRIGGER update_designer_projects_earnings_updated_at
   BEFORE UPDATE ON designer_projects_earnings
   FOR EACH ROW
@@ -308,6 +321,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS update_deal_redemptions_count_trigger ON deal_redemptions;
 CREATE TRIGGER update_deal_redemptions_count_trigger
   AFTER INSERT OR DELETE ON deal_redemptions
   FOR EACH ROW

@@ -104,7 +104,7 @@ const DesignerQuotes = () => {
         .from('designer_quotes')
         .select(`
           *,
-          project:customers(project_name, name, email, phone, property_type),
+          project:customers!designer_quotes_project_id_fkey(project_name, name, email, phone, property_type),
           items_count:quote_items(count)
         `)
         .eq('designer_id', designer.id)

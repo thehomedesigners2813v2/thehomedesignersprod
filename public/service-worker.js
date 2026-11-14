@@ -86,7 +86,7 @@ self.addEventListener('fetch', (event) => {
         .catch(() => {
           return caches.match(request).then((response) => {
             return response || caches.match('/index.html');
-          });
+          }).then((response) => response || Response.error());
         })
     );
     return;
@@ -111,7 +111,7 @@ self.addEventListener('fetch', (event) => {
             }
             return response;
           })
-          .catch(() => cached);
+          .catch(() => cached || Response.error());
         return cached || networkFetch;
       })
     );
@@ -121,7 +121,7 @@ self.addEventListener('fetch', (event) => {
   // All other same-origin GET requests: network-first, no caching
   if (request.method === 'GET') {
     event.respondWith(
-      fetch(request).catch(() => caches.match(request))
+      fetch(request).catch(() => caches.match(request).then((cached) => cached || Response.error()))
     );
   }
 });

@@ -57,18 +57,21 @@ CREATE TABLE IF NOT EXISTS customers (
 ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
 
 -- Policies for customers to manage their own projects
+DROP POLICY IF EXISTS "Customers can read own projects" ON customers;
 CREATE POLICY "Customers can read own projects"
   ON customers
   FOR SELECT
   TO authenticated
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Customers can update own projects" ON customers;
 CREATE POLICY "Customers can update own projects"
   ON customers
   FOR UPDATE
   TO authenticated
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Customers can insert own projects" ON customers;
 CREATE POLICY "Customers can insert own projects"
   ON customers
   FOR INSERT
@@ -76,6 +79,7 @@ CREATE POLICY "Customers can insert own projects"
   WITH CHECK (auth.uid() = user_id);
 
 -- Policy for designers to view customer projects (for matching purposes)
+DROP POLICY IF EXISTS "Designers can view customer projects" ON customers;
 CREATE POLICY "Designers can view customer projects"
   ON customers
   FOR SELECT
@@ -89,6 +93,7 @@ CREATE POLICY "Designers can view customer projects"
   );
 
 -- Trigger to automatically update updated_at
+DROP TRIGGER IF EXISTS update_customers_updated_at ON customers;
 CREATE TRIGGER update_customers_updated_at
   BEFORE UPDATE ON customers
   FOR EACH ROW

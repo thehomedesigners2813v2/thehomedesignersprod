@@ -17,6 +17,7 @@
 
 -- Helper functions for designer access (bypass RLS to avoid recursion)
 
+DROP FUNCTION IF EXISTS is_assigned_designer(uuid) CASCADE;
 CREATE OR REPLACE FUNCTION is_assigned_designer(customer_id uuid)
 RETURNS boolean
 LANGUAGE plpgsql
@@ -45,6 +46,7 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION is_assigned_designer(uuid) TO authenticated;
 
+DROP FUNCTION IF EXISTS has_project_share_access(uuid) CASCADE;
 CREATE OR REPLACE FUNCTION has_project_share_access(customer_id uuid)
 RETURNS boolean
 LANGUAGE plpgsql

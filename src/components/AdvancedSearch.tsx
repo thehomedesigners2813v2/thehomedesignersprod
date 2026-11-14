@@ -93,7 +93,7 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onResults, onLoading })
 
       let query = supabase
         .from('designers')
-        .select('*')
+        .select('id, name, specialization, experience, location, bio, website, starting_price, profile_image, portfolio_images, services, materials_expertise, awards, rating, total_reviews, total_projects, is_verified, is_active')
         .eq('is_active', true);
 
       // Apply filters

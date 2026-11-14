@@ -53,6 +53,7 @@ ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE chatbot_knowledge ENABLE ROW LEVEL SECURITY;
 
 -- Policies for chat_conversations
+DROP POLICY IF EXISTS "Users can manage own conversations" ON chat_conversations;
 CREATE POLICY "Users can manage own conversations"
   ON chat_conversations
   FOR ALL
@@ -60,12 +61,14 @@ CREATE POLICY "Users can manage own conversations"
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Anonymous users can create conversations" ON chat_conversations;
 CREATE POLICY "Anonymous users can create conversations"
   ON chat_conversations
   FOR INSERT
   TO anon
   WITH CHECK (user_id IS NULL);
 
+DROP POLICY IF EXISTS "Anonymous users can read own conversations" ON chat_conversations;
 CREATE POLICY "Anonymous users can read own conversations"
   ON chat_conversations
   FOR SELECT
@@ -73,6 +76,7 @@ CREATE POLICY "Anonymous users can read own conversations"
   USING (user_id IS NULL);
 
 -- Policies for chat_messages
+DROP POLICY IF EXISTS "Users can manage messages in own conversations" ON chat_messages;
 CREATE POLICY "Users can manage messages in own conversations"
   ON chat_messages
   FOR ALL
@@ -85,6 +89,7 @@ CREATE POLICY "Users can manage messages in own conversations"
     )
   );
 
+DROP POLICY IF EXISTS "Anonymous users can manage messages in own conversations" ON chat_messages;
 CREATE POLICY "Anonymous users can manage messages in own conversations"
   ON chat_messages
   FOR ALL
@@ -98,6 +103,7 @@ CREATE POLICY "Anonymous users can manage messages in own conversations"
   );
 
 -- Policies for chatbot_knowledge
+DROP POLICY IF EXISTS "Everyone can read active knowledge" ON chatbot_knowledge;
 CREATE POLICY "Everyone can read active knowledge"
   ON chatbot_knowledge
   FOR SELECT
@@ -105,11 +111,13 @@ CREATE POLICY "Everyone can read active knowledge"
   USING (is_active = true);
 
 -- Triggers for updated_at
+DROP TRIGGER IF EXISTS update_chat_conversations_updated_at ON chat_conversations;
 CREATE TRIGGER update_chat_conversations_updated_at
   BEFORE UPDATE ON chat_conversations
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_chatbot_knowledge_updated_at ON chatbot_knowledge;
 CREATE TRIGGER update_chatbot_knowledge_updated_at
   BEFORE UPDATE ON chatbot_knowledge
   FOR EACH ROW

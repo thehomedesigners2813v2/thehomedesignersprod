@@ -19,6 +19,7 @@
 */
 
 -- Add policy to allow public viewing of completed projects
+DROP POLICY IF EXISTS "Anyone can view completed projects" ON customers;
 CREATE POLICY "Anyone can view completed projects"
   ON customers FOR SELECT
   TO anon, authenticated

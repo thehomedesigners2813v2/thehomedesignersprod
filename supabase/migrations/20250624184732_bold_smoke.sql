@@ -79,6 +79,7 @@ ALTER TABLE design_furniture ENABLE ROW LEVEL SECURITY;
 ALTER TABLE design_walls ENABLE ROW LEVEL SECURITY;
 
 -- Policies for design_projects
+DROP POLICY IF EXISTS "Users can manage own design projects" ON design_projects;
 CREATE POLICY "Users can manage own design projects"
   ON design_projects
   FOR ALL
@@ -86,6 +87,7 @@ CREATE POLICY "Users can manage own design projects"
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Public can read public design projects" ON design_projects;
 CREATE POLICY "Public can read public design projects"
   ON design_projects
   FOR SELECT
@@ -93,6 +95,7 @@ CREATE POLICY "Public can read public design projects"
   USING (is_public = true);
 
 -- Policies for design_rooms
+DROP POLICY IF EXISTS "Users can manage rooms in own design projects" ON design_rooms;
 CREATE POLICY "Users can manage rooms in own design projects"
   ON design_rooms
   FOR ALL
@@ -112,6 +115,7 @@ CREATE POLICY "Users can manage rooms in own design projects"
     )
   );
 
+DROP POLICY IF EXISTS "Public can read rooms in public design projects" ON design_rooms;
 CREATE POLICY "Public can read rooms in public design projects"
   ON design_rooms
   FOR SELECT
@@ -125,6 +129,7 @@ CREATE POLICY "Public can read rooms in public design projects"
   );
 
 -- Policies for design_furniture
+DROP POLICY IF EXISTS "Users can manage furniture in own design projects" ON design_furniture;
 CREATE POLICY "Users can manage furniture in own design projects"
   ON design_furniture
   FOR ALL
@@ -144,6 +149,7 @@ CREATE POLICY "Users can manage furniture in own design projects"
     )
   );
 
+DROP POLICY IF EXISTS "Public can read furniture in public design projects" ON design_furniture;
 CREATE POLICY "Public can read furniture in public design projects"
   ON design_furniture
   FOR SELECT
@@ -157,6 +163,7 @@ CREATE POLICY "Public can read furniture in public design projects"
   );
 
 -- Policies for design_walls
+DROP POLICY IF EXISTS "Users can manage walls in own design projects" ON design_walls;
 CREATE POLICY "Users can manage walls in own design projects"
   ON design_walls
   FOR ALL
@@ -176,6 +183,7 @@ CREATE POLICY "Users can manage walls in own design projects"
     )
   );
 
+DROP POLICY IF EXISTS "Public can read walls in public design projects" ON design_walls;
 CREATE POLICY "Public can read walls in public design projects"
   ON design_walls
   FOR SELECT
@@ -189,21 +197,25 @@ CREATE POLICY "Public can read walls in public design projects"
   );
 
 -- Triggers for updated_at
+DROP TRIGGER IF EXISTS update_design_projects_updated_at ON design_projects;
 CREATE TRIGGER update_design_projects_updated_at
   BEFORE UPDATE ON design_projects
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_design_rooms_updated_at ON design_rooms;
 CREATE TRIGGER update_design_rooms_updated_at
   BEFORE UPDATE ON design_rooms
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_design_furniture_updated_at ON design_furniture;
 CREATE TRIGGER update_design_furniture_updated_at
   BEFORE UPDATE ON design_furniture
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_design_walls_updated_at ON design_walls;
 CREATE TRIGGER update_design_walls_updated_at
   BEFORE UPDATE ON design_walls
   FOR EACH ROW
@@ -247,11 +259,13 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Triggers to update cost
+DROP TRIGGER IF EXISTS update_design_cost_on_furniture_change ON design_furniture;
 CREATE TRIGGER update_design_cost_on_furniture_change
   AFTER INSERT OR UPDATE OR DELETE ON design_furniture
   FOR EACH ROW
   EXECUTE FUNCTION update_design_project_cost();
 
+DROP TRIGGER IF EXISTS update_design_cost_on_room_change ON design_rooms;
 CREATE TRIGGER update_design_cost_on_room_change
   AFTER INSERT OR UPDATE OR DELETE ON design_rooms
   FOR EACH ROW

@@ -52,6 +52,7 @@ CREATE INDEX IF NOT EXISTS idx_project_images_created_at ON project_images(creat
 ALTER TABLE project_images ENABLE ROW LEVEL SECURITY;
 
 -- Public can view images for completed projects only
+DROP POLICY IF EXISTS "Anyone can view images for completed projects" ON project_images;
 CREATE POLICY "Anyone can view images for completed projects"
   ON project_images FOR SELECT
   USING (
@@ -63,6 +64,7 @@ CREATE POLICY "Anyone can view images for completed projects"
   );
 
 -- Designers can view all images for their assigned projects
+DROP POLICY IF EXISTS "Designers can view images for assigned projects" ON project_images;
 CREATE POLICY "Designers can view images for assigned projects"
   ON project_images FOR SELECT
   TO authenticated
@@ -76,6 +78,7 @@ CREATE POLICY "Designers can view images for assigned projects"
   );
 
 -- Designers can upload images for their assigned completed projects
+DROP POLICY IF EXISTS "Designers can upload images for assigned completed projects" ON project_images;
 CREATE POLICY "Designers can upload images for assigned completed projects"
   ON project_images FOR INSERT
   TO authenticated
@@ -90,6 +93,7 @@ CREATE POLICY "Designers can upload images for assigned completed projects"
   );
 
 -- Designers can update their uploaded images
+DROP POLICY IF EXISTS "Designers can update their uploaded images" ON project_images;
 CREATE POLICY "Designers can update their uploaded images"
   ON project_images FOR UPDATE
   TO authenticated
@@ -97,6 +101,7 @@ CREATE POLICY "Designers can update their uploaded images"
   WITH CHECK (uploaded_by = auth.uid());
 
 -- Designers can delete their uploaded images
+DROP POLICY IF EXISTS "Designers can delete their uploaded images" ON project_images;
 CREATE POLICY "Designers can delete their uploaded images"
   ON project_images FOR DELETE
   TO authenticated
@@ -108,10 +113,12 @@ VALUES ('project-gallery', 'project-gallery', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Storage policies for project-gallery bucket
+DROP POLICY IF EXISTS "Public can view project gallery images" ON storage.objects;
 CREATE POLICY "Public can view project gallery images"
   ON storage.objects FOR SELECT
   USING (bucket_id = 'project-gallery');
 
+DROP POLICY IF EXISTS "Designers can upload project gallery images" ON storage.objects;
 CREATE POLICY "Designers can upload project gallery images"
   ON storage.objects FOR INSERT
   TO authenticated
@@ -123,6 +130,7 @@ CREATE POLICY "Designers can upload project gallery images"
     )
   );
 
+DROP POLICY IF EXISTS "Designers can update project gallery images" ON storage.objects;
 CREATE POLICY "Designers can update project gallery images"
   ON storage.objects FOR UPDATE
   TO authenticated
@@ -141,6 +149,7 @@ CREATE POLICY "Designers can update project gallery images"
     )
   );
 
+DROP POLICY IF EXISTS "Designers can delete project gallery images" ON storage.objects;
 CREATE POLICY "Designers can delete project gallery images"
   ON storage.objects FOR DELETE
   TO authenticated

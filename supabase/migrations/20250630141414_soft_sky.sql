@@ -59,6 +59,7 @@ CREATE POLICY "Designers can manage team members for their projects"
     )
   );
 
+DROP POLICY IF EXISTS "Customers can view team members for their projects" ON project_team_members;
 CREATE POLICY "Customers can view team members for their projects"
   ON project_team_members
   FOR SELECT

@@ -15,6 +15,7 @@
 */
 
 -- Add policy for authenticated users to view subscription management setting
+DROP POLICY IF EXISTS "Authenticated users can view subscription management setting" ON site_settings;
 CREATE POLICY "Authenticated users can view subscription management setting"
   ON site_settings
   FOR SELECT

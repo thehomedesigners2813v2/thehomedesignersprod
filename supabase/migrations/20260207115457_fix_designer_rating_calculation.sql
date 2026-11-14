@@ -52,6 +52,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Recreate trigger
+DROP TRIGGER IF EXISTS update_designer_rating_trigger ON reviews;
 CREATE TRIGGER update_designer_rating_trigger
   AFTER INSERT OR UPDATE OR DELETE ON reviews
   FOR EACH ROW

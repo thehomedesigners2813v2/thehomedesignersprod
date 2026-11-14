@@ -12,6 +12,7 @@
 */
 
 -- Create a function to get customer quotes with items
+DROP FUNCTION IF EXISTS get_customer_quotes(uuid);
 CREATE OR REPLACE FUNCTION get_customer_quotes(customer_user_id uuid DEFAULT auth.uid())
 RETURNS SETOF designer_quotes
 LANGUAGE plpgsql

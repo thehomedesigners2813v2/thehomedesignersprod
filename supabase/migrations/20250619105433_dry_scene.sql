@@ -69,6 +69,7 @@ ALTER TABLE project_assignments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE project_versions ENABLE ROW LEVEL SECURITY;
 
 -- Policies for project_activities
+DROP POLICY IF EXISTS "Users can view activities for their projects" ON project_activities;
 CREATE POLICY "Users can view activities for their projects"
   ON project_activities
   FOR SELECT
@@ -90,6 +91,7 @@ CREATE POLICY "Users can view activities for their projects"
     )
   );
 
+DROP POLICY IF EXISTS "System can insert activities" ON project_activities;
 CREATE POLICY "System can insert activities"
   ON project_activities
   FOR INSERT
@@ -97,6 +99,7 @@ CREATE POLICY "System can insert activities"
   WITH CHECK (true);
 
 -- Policies for project_assignments
+DROP POLICY IF EXISTS "Users can view their assignments" ON project_assignments;
 CREATE POLICY "Users can view their assignments"
   ON project_assignments
   FOR SELECT
@@ -110,12 +113,14 @@ CREATE POLICY "Users can view their assignments"
     )
   );
 
+DROP POLICY IF EXISTS "Customers can create assignments" ON project_assignments;
 CREATE POLICY "Customers can create assignments"
   ON project_assignments
   FOR INSERT
   TO authenticated
   WITH CHECK (customer_id = auth.uid());
 
+DROP POLICY IF EXISTS "Designers can update assignments" ON project_assignments;
 CREATE POLICY "Designers can update assignments"
   ON project_assignments
   FOR UPDATE
@@ -129,6 +134,7 @@ CREATE POLICY "Designers can update assignments"
   );
 
 -- Policies for project_versions
+DROP POLICY IF EXISTS "Users can view versions for their projects" ON project_versions;
 CREATE POLICY "Users can view versions for their projects"
   ON project_versions
   FOR SELECT
@@ -150,6 +156,7 @@ CREATE POLICY "Users can view versions for their projects"
     )
   );
 
+DROP POLICY IF EXISTS "System can insert versions" ON project_versions;
 CREATE POLICY "System can insert versions"
   ON project_versions
   FOR INSERT
@@ -247,6 +254,7 @@ CREATE TRIGGER project_activity_trigger
   EXECUTE FUNCTION log_project_activity();
 
 -- Add trigger for assignment updates
+DROP TRIGGER IF EXISTS update_project_assignments_updated_at ON project_assignments;
 CREATE TRIGGER update_project_assignments_updated_at
   BEFORE UPDATE ON project_assignments
   FOR EACH ROW

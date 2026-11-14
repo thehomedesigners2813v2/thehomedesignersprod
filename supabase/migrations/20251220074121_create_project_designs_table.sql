@@ -49,6 +49,7 @@ CREATE INDEX IF NOT EXISTS idx_project_designs_designer_id ON project_designs(de
 CREATE INDEX IF NOT EXISTS idx_project_designs_status ON project_designs(status);
 
 -- RLS Policies for designers
+DROP POLICY IF EXISTS "Designers can view their own designs" ON project_designs;
 CREATE POLICY "Designers can view their own designs"
   ON project_designs FOR SELECT
   TO authenticated
@@ -60,6 +61,7 @@ CREATE POLICY "Designers can view their own designs"
     )
   );
 
+DROP POLICY IF EXISTS "Designers can create designs for their projects" ON project_designs;
 CREATE POLICY "Designers can create designs for their projects"
   ON project_designs FOR INSERT
   TO authenticated
@@ -71,6 +73,7 @@ CREATE POLICY "Designers can create designs for their projects"
     )
   );
 
+DROP POLICY IF EXISTS "Designers can update their own designs" ON project_designs;
 CREATE POLICY "Designers can update their own designs"
   ON project_designs FOR UPDATE
   TO authenticated
@@ -89,6 +92,7 @@ CREATE POLICY "Designers can update their own designs"
     )
   );
 
+DROP POLICY IF EXISTS "Designers can delete their own designs" ON project_designs;
 CREATE POLICY "Designers can delete their own designs"
   ON project_designs FOR DELETE
   TO authenticated
@@ -101,6 +105,7 @@ CREATE POLICY "Designers can delete their own designs"
   );
 
 -- RLS Policies for customers
+DROP POLICY IF EXISTS "Customers can view designs for their projects" ON project_designs;
 CREATE POLICY "Customers can view designs for their projects"
   ON project_designs FOR SELECT
   TO authenticated
@@ -113,6 +118,7 @@ CREATE POLICY "Customers can view designs for their projects"
     )
   );
 
+DROP POLICY IF EXISTS "Customers can update feedback on their project designs" ON project_designs;
 CREATE POLICY "Customers can update feedback on their project designs"
   ON project_designs FOR UPDATE
   TO authenticated
@@ -132,6 +138,7 @@ CREATE POLICY "Customers can update feedback on their project designs"
   );
 
 -- RLS Policies for admins
+DROP POLICY IF EXISTS "Admins can view all designs" ON project_designs;
 CREATE POLICY "Admins can view all designs"
   ON project_designs FOR SELECT
   TO authenticated
@@ -142,6 +149,7 @@ CREATE POLICY "Admins can view all designs"
     )
   );
 
+DROP POLICY IF EXISTS "Admins can delete any design" ON project_designs;
 CREATE POLICY "Admins can delete any design"
   ON project_designs FOR DELETE
   TO authenticated
@@ -158,6 +166,7 @@ VALUES ('project-designs', 'project-designs', false)
 ON CONFLICT (id) DO NOTHING;
 
 -- Storage policies for design files
+DROP POLICY IF EXISTS "Designers can upload design files" ON storage.objects;
 CREATE POLICY "Designers can upload design files"
   ON storage.objects FOR INSERT
   TO authenticated
@@ -169,6 +178,7 @@ CREATE POLICY "Designers can upload design files"
     )
   );
 
+DROP POLICY IF EXISTS "Designers can view their design files" ON storage.objects;
 CREATE POLICY "Designers can view their design files"
   ON storage.objects FOR SELECT
   TO authenticated
@@ -180,6 +190,7 @@ CREATE POLICY "Designers can view their design files"
     )
   );
 
+DROP POLICY IF EXISTS "Designers can update their design files" ON storage.objects;
 CREATE POLICY "Designers can update their design files"
   ON storage.objects FOR UPDATE
   TO authenticated
@@ -191,6 +202,7 @@ CREATE POLICY "Designers can update their design files"
     )
   );
 
+DROP POLICY IF EXISTS "Designers can delete their design files" ON storage.objects;
 CREATE POLICY "Designers can delete their design files"
   ON storage.objects FOR DELETE
   TO authenticated
@@ -202,6 +214,7 @@ CREATE POLICY "Designers can delete their design files"
     )
   );
 
+DROP POLICY IF EXISTS "Customers can view design files for their projects" ON storage.objects;
 CREATE POLICY "Customers can view design files for their projects"
   ON storage.objects FOR SELECT
   TO authenticated
@@ -213,6 +226,7 @@ CREATE POLICY "Customers can view design files for their projects"
     )
   );
 
+DROP POLICY IF EXISTS "Admins can manage all design files" ON storage.objects;
 CREATE POLICY "Admins can manage all design files"
   ON storage.objects FOR ALL
   TO authenticated
@@ -238,6 +252,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Trigger to auto-increment version on insert
+DROP TRIGGER IF EXISTS set_design_version ON project_designs;
 CREATE TRIGGER set_design_version
   BEFORE INSERT ON project_designs
   FOR EACH ROW
@@ -253,6 +268,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Trigger to update updated_at
+DROP TRIGGER IF EXISTS update_project_designs_timestamp ON project_designs;
 CREATE TRIGGER update_project_designs_timestamp
   BEFORE UPDATE ON project_designs
   FOR EACH ROW

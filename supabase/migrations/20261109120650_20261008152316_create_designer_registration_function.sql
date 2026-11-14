@@ -51,4 +51,4 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.register_designer_profile TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.register_designer_profile(uuid, text, text, text, text, text, integer, text, text, text, text, text, text, text, text[], text[], text[]) TO anon, authenticated;

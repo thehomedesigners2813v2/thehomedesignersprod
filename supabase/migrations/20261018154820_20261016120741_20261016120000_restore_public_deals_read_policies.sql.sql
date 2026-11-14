@@ -42,6 +42,7 @@ DROP POLICY IF EXISTS "deals_designer_insert" ON designer_deals;
 DROP POLICY IF EXISTS "deals_designer_update" ON designer_deals;
 DROP POLICY IF EXISTS "deals_designer_delete" ON designer_deals;
 
+DROP POLICY IF EXISTS "deals_public_select" ON designer_deals;
 CREATE POLICY "deals_public_select"
   ON designer_deals FOR SELECT
   TO anon, authenticated
@@ -51,6 +52,7 @@ CREATE POLICY "deals_public_select"
     AND valid_until >= now()
   );
 
+DROP POLICY IF EXISTS "deals_admin_select" ON designer_deals;
 CREATE POLICY "deals_admin_select"
   ON designer_deals FOR SELECT
   TO authenticated
@@ -63,6 +65,7 @@ CREATE POLICY "deals_admin_select"
     )
   );
 
+DROP POLICY IF EXISTS "deals_designer_select" ON designer_deals;
 CREATE POLICY "deals_designer_select"
   ON designer_deals FOR SELECT
   TO authenticated
@@ -74,6 +77,7 @@ CREATE POLICY "deals_designer_select"
     )
   );
 
+DROP POLICY IF EXISTS "deals_admin_insert" ON designer_deals;
 CREATE POLICY "deals_admin_insert"
   ON designer_deals FOR INSERT
   TO authenticated
@@ -86,6 +90,7 @@ CREATE POLICY "deals_admin_insert"
     )
   );
 
+DROP POLICY IF EXISTS "deals_designer_insert" ON designer_deals;
 CREATE POLICY "deals_designer_insert"
   ON designer_deals FOR INSERT
   TO authenticated
@@ -97,6 +102,7 @@ CREATE POLICY "deals_designer_insert"
     )
   );
 
+DROP POLICY IF EXISTS "deals_admin_update" ON designer_deals;
 CREATE POLICY "deals_admin_update"
   ON designer_deals FOR UPDATE
   TO authenticated
@@ -117,6 +123,7 @@ CREATE POLICY "deals_admin_update"
     )
   );
 
+DROP POLICY IF EXISTS "deals_designer_update" ON designer_deals;
 CREATE POLICY "deals_designer_update"
   ON designer_deals FOR UPDATE
   TO authenticated
@@ -135,6 +142,7 @@ CREATE POLICY "deals_designer_update"
     )
   );
 
+DROP POLICY IF EXISTS "deals_admin_delete" ON designer_deals;
 CREATE POLICY "deals_admin_delete"
   ON designer_deals FOR DELETE
   TO authenticated
@@ -147,6 +155,7 @@ CREATE POLICY "deals_admin_delete"
     )
   );
 
+DROP POLICY IF EXISTS "deals_designer_delete" ON designer_deals;
 CREATE POLICY "deals_designer_delete"
   ON designer_deals FOR DELETE
   TO authenticated

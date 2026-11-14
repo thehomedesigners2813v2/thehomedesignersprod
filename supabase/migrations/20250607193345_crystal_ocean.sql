@@ -63,18 +63,21 @@ CREATE TABLE IF NOT EXISTS designers (
 ALTER TABLE designers ENABLE ROW LEVEL SECURITY;
 
 -- Policies for designers to manage their own profiles
+DROP POLICY IF EXISTS "Designers can read own profile" ON designers;
 CREATE POLICY "Designers can read own profile"
   ON designers
   FOR SELECT
   TO authenticated
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Designers can update own profile" ON designers;
 CREATE POLICY "Designers can update own profile"
   ON designers
   FOR UPDATE
   TO authenticated
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Designers can insert own profile" ON designers;
 CREATE POLICY "Designers can insert own profile"
   ON designers
   FOR INSERT
@@ -82,6 +85,7 @@ CREATE POLICY "Designers can insert own profile"
   WITH CHECK (auth.uid() = user_id);
 
 -- Policy for public read access to active designers
+DROP POLICY IF EXISTS "Public can read active designers" ON designers;
 CREATE POLICY "Public can read active designers"
   ON designers
   FOR SELECT
@@ -98,6 +102,7 @@ END;
 $$ language 'plpgsql';
 
 -- Trigger to automatically update updated_at
+DROP TRIGGER IF EXISTS update_designers_updated_at ON designers;
 CREATE TRIGGER update_designers_updated_at
   BEFORE UPDATE ON designers
   FOR EACH ROW

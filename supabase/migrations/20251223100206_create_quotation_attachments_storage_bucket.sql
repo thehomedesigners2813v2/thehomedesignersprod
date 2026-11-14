@@ -56,6 +56,7 @@ WITH CHECK (
 );
 
 -- Policy: Allow customers to upload payment receipts for their project quotes
+DROP POLICY IF EXISTS "Customers can upload payment receipts" ON storage.objects;
 CREATE POLICY "Customers can upload payment receipts"
 ON storage.objects
 FOR INSERT
@@ -71,6 +72,7 @@ WITH CHECK (
 );
 
 -- Policy: Allow users to view files they have access to
+DROP POLICY IF EXISTS "Users can view their quotation attachments" ON storage.objects;
 CREATE POLICY "Users can view their quotation attachments"
 ON storage.objects
 FOR SELECT
@@ -97,6 +99,7 @@ USING (
 );
 
 -- Policy: Allow users to delete their own uploaded files
+DROP POLICY IF EXISTS "Users can delete their own attachments" ON storage.objects;
 CREATE POLICY "Users can delete their own attachments"
 ON storage.objects
 FOR DELETE

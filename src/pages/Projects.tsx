@@ -29,7 +29,7 @@ const statusBadge = (status: string | null) => {
 };
 
 const Projects = () => {
-  const { user } = useAuth();
+  const { user, isDesigner } = useAuth();
   const [listings, setListings] = useState<CommunityListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -144,7 +144,7 @@ const Projects = () => {
               const spotsOpen = Math.max(listing.max_participants - listing.participant_count, 0);
               const fillPercent = Math.min((listing.participant_count / listing.max_participants) * 100, 100);
               const badge = statusBadge(listing.my_status);
-              const canJoin = listing.my_status == null && spotsOpen > 0;
+              const canJoin = Boolean(user) && !isDesigner && listing.my_status == null && spotsOpen > 0;
 
               return (
                 <article
@@ -207,28 +207,18 @@ const Projects = () => {
                     </div>
                   </div>
 
-                  <div className="mt-auto pt-6">
-                    {canJoin ? (
+                  {canJoin && (
+                    <div className="mt-auto pt-6">
                       <button
+                        type="button"
                         onClick={() => handleJoinClick(listing)}
                         className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-3 font-medium text-white transition-colors hover:bg-primary-700"
                       >
                         Join project
                         <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                       </button>
-                    ) : (
-                      <button
-                        disabled
-                        className="w-full cursor-not-allowed rounded-xl bg-stone-100 px-4 py-3 font-medium text-gray-500"
-                      >
-                        {listing.my_status === 'owner'
-                          ? 'This is your project'
-                          : listing.my_status
-                            ? 'Already requested'
-                            : 'No spots available'}
-                      </button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </article>
               );
             })}

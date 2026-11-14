@@ -77,6 +77,7 @@ The Home Designers Team'
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trigger_notify_on_project_creation ON customers;
 CREATE TRIGGER trigger_notify_on_project_creation
 AFTER INSERT ON customers
 FOR EACH ROW
@@ -149,6 +150,7 @@ The Home Designers Team'
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trigger_notify_on_project_status_update ON customers;
 CREATE TRIGGER trigger_notify_on_project_status_update
 AFTER UPDATE ON customers
 FOR EACH ROW

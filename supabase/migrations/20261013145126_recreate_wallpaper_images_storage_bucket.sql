@@ -15,6 +15,7 @@ CREATE POLICY "Public can view wallpaper images"
   USING (bucket_id = 'wallpaper-images');
 
 -- Admin-only upload access (using user_id column per fix migration 20260317174427)
+DROP POLICY IF EXISTS "Admins can upload wallpaper images" ON storage.objects;
 CREATE POLICY "Admins can upload wallpaper images"
   ON storage.objects FOR INSERT
   TO authenticated
@@ -27,6 +28,7 @@ CREATE POLICY "Admins can upload wallpaper images"
   );
 
 -- Admin-only update access
+DROP POLICY IF EXISTS "Admins can update wallpaper images" ON storage.objects;
 CREATE POLICY "Admins can update wallpaper images"
   ON storage.objects FOR UPDATE
   TO authenticated
@@ -46,6 +48,7 @@ CREATE POLICY "Admins can update wallpaper images"
   );
 
 -- Admin-only delete access
+DROP POLICY IF EXISTS "Admins can delete wallpaper images" ON storage.objects;
 CREATE POLICY "Admins can delete wallpaper images"
   ON storage.objects FOR DELETE
   TO authenticated

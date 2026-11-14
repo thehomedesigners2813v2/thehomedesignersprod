@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS project_updates (
 ALTER TABLE project_updates ENABLE ROW LEVEL SECURITY;
 
 -- Policies for project_updates
+DROP POLICY IF EXISTS "Designers can manage updates for their assigned projects" ON project_updates;
 CREATE POLICY "Designers can manage updates for their assigned projects"
   ON project_updates
   FOR ALL
@@ -61,6 +62,7 @@ CREATE POLICY "Designers can manage updates for their assigned projects"
     )
   );
 
+DROP POLICY IF EXISTS "Customers can view updates for their projects" ON project_updates;
 CREATE POLICY "Customers can view updates for their projects"
   ON project_updates
   FOR SELECT
@@ -74,6 +76,7 @@ CREATE POLICY "Customers can view updates for their projects"
   );
 
 -- Trigger to automatically update updated_at
+DROP TRIGGER IF EXISTS update_project_updates_updated_at ON project_updates;
 CREATE TRIGGER update_project_updates_updated_at
   BEFORE UPDATE ON project_updates
   FOR EACH ROW

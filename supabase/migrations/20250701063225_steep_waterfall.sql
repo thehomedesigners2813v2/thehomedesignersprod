@@ -27,7 +27,8 @@ BEGIN
     AND schemaname = 'storage'
   ) THEN
     -- Allow public access to all files in the bucket
-    CREATE POLICY "Public Access"
+    DROP POLICY IF EXISTS "Public Access" ON storage.objects;
+CREATE POLICY "Public Access"
     ON storage.objects FOR SELECT
     USING (bucket_id = 'project-images');
   END IF;
@@ -40,7 +41,8 @@ BEGIN
     AND schemaname = 'storage'
   ) THEN
     -- Allow authenticated users to upload files
-    CREATE POLICY "Authenticated users can upload files"
+    DROP POLICY IF EXISTS "Authenticated users can upload files" ON storage.objects;
+CREATE POLICY "Authenticated users can upload files"
     ON storage.objects FOR INSERT
     TO authenticated
     WITH CHECK (bucket_id = 'project-images');
@@ -54,7 +56,8 @@ BEGIN
     AND schemaname = 'storage'
   ) THEN
     -- Allow users to update their own files
-    CREATE POLICY "Users can update their own files"
+    DROP POLICY IF EXISTS "Users can update their own files" ON storage.objects;
+CREATE POLICY "Users can update their own files"
     ON storage.objects FOR UPDATE
     TO authenticated
     USING (bucket_id = 'project-images' AND (storage.foldername(name))[1] = auth.uid()::text);
@@ -68,7 +71,8 @@ BEGIN
     AND schemaname = 'storage'
   ) THEN
     -- Allow users to delete their own files
-    CREATE POLICY "Users can delete their own files"
+    DROP POLICY IF EXISTS "Users can delete their own files" ON storage.objects;
+CREATE POLICY "Users can delete their own files"
     ON storage.objects FOR DELETE
     TO authenticated
     USING (bucket_id = 'project-images' AND (storage.foldername(name))[1] = auth.uid()::text);

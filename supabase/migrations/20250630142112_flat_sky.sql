@@ -100,33 +100,37 @@ BEGIN
 END $$;
 
 -- Create new policies
+DROP POLICY IF EXISTS "Users can upload to project-images" ON storage.objects;
 CREATE POLICY "Users can upload to project-images"
   ON storage.objects
   FOR INSERT
   TO authenticated
   WITH CHECK (
     bucket_id = 'project-images' AND
-    (auth.uid()::text = (storage.foldername(name))[2] OR auth.uid()::text = (storage.foldername(name))[1])
+    (auth.uid()::text::text = (storage.foldername(name))[2] OR auth.uid()::text::text = (storage.foldername(name))[1])
   );
 
+DROP POLICY IF EXISTS "Users can update own project-images" ON storage.objects;
 CREATE POLICY "Users can update own project-images"
   ON storage.objects
   FOR UPDATE
   TO authenticated
   USING (
     bucket_id = 'project-images' AND
-    (auth.uid()::text = (storage.foldername(name))[2] OR auth.uid()::text = (storage.foldername(name))[1])
+    (auth.uid()::text::text = (storage.foldername(name))[2] OR auth.uid()::text::text = (storage.foldername(name))[1])
   );
 
+DROP POLICY IF EXISTS "Users can delete own project-images" ON storage.objects;
 CREATE POLICY "Users can delete own project-images"
   ON storage.objects
   FOR DELETE
   TO authenticated
   USING (
     bucket_id = 'project-images' AND
-    (auth.uid()::text = (storage.foldername(name))[2] OR auth.uid()::text = (storage.foldername(name))[1])
+    (auth.uid()::text::text = (storage.foldername(name))[2] OR auth.uid()::text::text = (storage.foldername(name))[1])
   );
 
+DROP POLICY IF EXISTS "Anyone can view project-images" ON storage.objects;
 CREATE POLICY "Anyone can view project-images"
   ON storage.objects
   FOR SELECT
@@ -134,6 +138,7 @@ CREATE POLICY "Anyone can view project-images"
   USING (bucket_id = 'project-images');
 
 -- Allow anonymous uploads for non-authenticated users
+DROP POLICY IF EXISTS "Anonymous users can upload to project-images" ON storage.objects;
 CREATE POLICY "Anonymous users can upload to project-images"
   ON storage.objects
   FOR INSERT

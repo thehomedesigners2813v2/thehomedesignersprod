@@ -24,6 +24,7 @@ VALUES (
 ON CONFLICT (id) DO NOTHING;
 
 -- Allow authenticated users to upload their own profile images
+DROP POLICY IF EXISTS "Designers can upload own profile image" ON storage.objects;
 CREATE POLICY "Designers can upload own profile image"
   ON storage.objects
   FOR INSERT
@@ -34,6 +35,7 @@ CREATE POLICY "Designers can upload own profile image"
   );
 
 -- Allow designers to update their own profile images
+DROP POLICY IF EXISTS "Designers can update own profile image" ON storage.objects;
 CREATE POLICY "Designers can update own profile image"
   ON storage.objects
   FOR UPDATE
@@ -48,6 +50,7 @@ CREATE POLICY "Designers can update own profile image"
   );
 
 -- Allow designers to delete their own profile images
+DROP POLICY IF EXISTS "Designers can delete own profile image" ON storage.objects;
 CREATE POLICY "Designers can delete own profile image"
   ON storage.objects
   FOR DELETE
@@ -58,6 +61,7 @@ CREATE POLICY "Designers can delete own profile image"
   );
 
 -- Allow public read access to all profile images
+DROP POLICY IF EXISTS "Public can view profile images" ON storage.objects;
 CREATE POLICY "Public can view profile images"
   ON storage.objects
   FOR SELECT

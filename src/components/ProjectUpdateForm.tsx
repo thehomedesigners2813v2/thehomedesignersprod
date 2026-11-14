@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, X, Upload, Camera, FileText, Calendar, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import { Plus, X, Upload, Camera, FileText, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 
@@ -35,8 +35,7 @@ const ProjectUpdateForm: React.FC<ProjectUpdateFormProps> = ({
   
   const updateTypes = [
     { value: 'progress_report', label: 'Progress Report', icon: FileText },
-    { value: 'photo_update', label: 'Photo Update', icon: Camera },
-    { value: 'milestone', label: 'Milestone', icon: Calendar }
+    { value: 'photo_update', label: 'Photo Update', icon: Camera }
   ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -202,7 +201,7 @@ const ProjectUpdateForm: React.FC<ProjectUpdateFormProps> = ({
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Update Type *
           </label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {updateTypes.map(type => {
               const IconComponent = type.icon;
               return (

@@ -35,6 +35,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [success, setSuccess] = useState('');
   const [showRegistrationSuccess, setShowRegistrationSuccess] = useState(false);
+  const [pendingConfirmationEmail, setPendingConfirmationEmail] = useState('');
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -56,10 +57,6 @@ const AuthModal: React.FC<AuthModalProps> = ({
       clearForm();
     }
   }, [isOpen]);
-
-  useEffect(() => {
-    clearForm();
-  }, [mode]);
 
   const clearForm = () => {
     setEmail('');
@@ -215,25 +212,36 @@ const AuthModal: React.FC<AuthModalProps> = ({
           return;
         }
 
-        if (data.user) {
-          // Check if email confirmation is required
-          const confirmationRequired = data.user.identities && data.user.identities.length === 0;
-
-          if (confirmationRequired) {
-            setShowRegistrationSuccess(true);
-            clearForm();
-          } else {
-            // Auto-confirmation is enabled (for development)
-            setSuccess('Account created successfully! You can now sign in.');
-            setTimeout(() => {
-              onModeChange('login');
-              setSuccess('');
-              setEmail(email);
-              setPassword('');
-              setName('');
-            }, 2000);
-          }
+        if (!data.user) {
+          setErrors({ general: 'The account could not be created. Please try again.' });
+          return;
         }
+
+        const identities = data.user.identities ?? [];
+        if (identities.length === 0) {
+          setErrors({
+            email: 'An account with this email already exists. Sign in, or open the confirmation email if you have not verified it yet.',
+          });
+          return;
+        }
+
+        // Email confirmation is enabled when sign-up does not create a session.
+        if (!data.session) {
+          setPendingConfirmationEmail(email.trim());
+          setPassword('');
+          setName('');
+          setShowRegistrationSuccess(true);
+          return;
+        }
+
+        setSuccess('Account created successfully.');
+        setTimeout(() => {
+          clearForm();
+          onClose();
+          if (onAuthSuccess) {
+            onAuthSuccess();
+          }
+        }, 800);
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
           email: email.trim(),
@@ -322,13 +330,17 @@ const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   const handleModeChange = (newMode: 'login' | 'signup') => {
+    const keptEmail = email;
     clearForm();
+    setEmail(keptEmail);
     onModeChange(newMode);
   };
 
   const handleRegistrationSuccessClose = () => {
     setShowRegistrationSuccess(false);
-    onClose();
+    setPassword('');
+    setName('');
+    setSuccess(`We sent a confirmation link to ${pendingConfirmationEmail}. Open that email, then sign in here.`);
     onModeChange('login');
   };
 
@@ -452,7 +464,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
           )}
 
           {success && (
-            <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-lg text-sm">
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
               {success}
             </div>
           )}

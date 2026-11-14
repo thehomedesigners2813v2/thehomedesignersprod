@@ -53,6 +53,7 @@ ALTER TABLE designer_quotes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE quote_items ENABLE ROW LEVEL SECURITY;
 
 -- Policies for designer_quotes
+DROP POLICY IF EXISTS "Designers can manage their own quotes" ON designer_quotes;
 CREATE POLICY "Designers can manage their own quotes"
   ON designer_quotes
   FOR ALL
@@ -72,6 +73,7 @@ CREATE POLICY "Designers can manage their own quotes"
     )
   );
 
+DROP POLICY IF EXISTS "Customers can view quotes for their projects" ON designer_quotes;
 CREATE POLICY "Customers can view quotes for their projects"
   ON designer_quotes
   FOR SELECT
@@ -85,6 +87,7 @@ CREATE POLICY "Customers can view quotes for their projects"
   );
 
 -- Policies for quote_items
+DROP POLICY IF EXISTS "Designers can manage their own quote items" ON quote_items;
 CREATE POLICY "Designers can manage their own quote items"
   ON quote_items
   FOR ALL
@@ -106,6 +109,7 @@ CREATE POLICY "Designers can manage their own quote items"
     )
   );
 
+DROP POLICY IF EXISTS "Customers can view quote items for their projects" ON quote_items;
 CREATE POLICY "Customers can view quote items for their projects"
   ON quote_items
   FOR SELECT
@@ -120,6 +124,7 @@ CREATE POLICY "Customers can view quote items for their projects"
   );
 
 -- Trigger to automatically update updated_at
+DROP TRIGGER IF EXISTS update_designer_quotes_updated_at ON designer_quotes;
 CREATE TRIGGER update_designer_quotes_updated_at
   BEFORE UPDATE ON designer_quotes
   FOR EACH ROW

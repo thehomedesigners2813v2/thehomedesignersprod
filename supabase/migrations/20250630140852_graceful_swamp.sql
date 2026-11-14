@@ -23,6 +23,7 @@ VALUES (
 ) ON CONFLICT (id) DO NOTHING;
 
 -- Allow authenticated users to upload files to their own folder
+DROP POLICY IF EXISTS "Users can upload to own folder" ON storage.objects;
 CREATE POLICY "Users can upload to own folder"
 ON storage.objects
 FOR INSERT
@@ -34,6 +35,7 @@ WITH CHECK (
 );
 
 -- Allow authenticated users to update their own files
+DROP POLICY IF EXISTS "Users can update own files" ON storage.objects;
 CREATE POLICY "Users can update own files"
 ON storage.objects
 FOR UPDATE
@@ -45,6 +47,7 @@ USING (
 );
 
 -- Allow authenticated users to delete their own files
+DROP POLICY IF EXISTS "Users can delete own files" ON storage.objects;
 CREATE POLICY "Users can delete own files"
 ON storage.objects
 FOR DELETE
@@ -56,6 +59,7 @@ USING (
 );
 
 -- Allow public read access to all files in the bucket
+DROP POLICY IF EXISTS "Public can view all images" ON storage.objects;
 CREATE POLICY "Public can view all images"
 ON storage.objects
 FOR SELECT
@@ -63,6 +67,7 @@ TO public
 USING (bucket_id = 'project-images');
 
 -- Allow anonymous users to upload files (for non-authenticated users)
+DROP POLICY IF EXISTS "Anonymous users can upload" ON storage.objects;
 CREATE POLICY "Anonymous users can upload"
 ON storage.objects
 FOR INSERT

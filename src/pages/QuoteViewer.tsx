@@ -131,7 +131,7 @@ const QuoteViewer = () => {
         .select(`
           *,
           designer:designers(name, email, phone, location, specialization),
-          project:customers(name, email, phone, location, property_type, project_name)
+          project:customers!designer_quotes_project_id_fkey(name, email, phone, location, property_type, project_name)
         `)
         .eq('id', quoteId)
         .single();

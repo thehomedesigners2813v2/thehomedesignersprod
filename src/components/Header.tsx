@@ -173,7 +173,7 @@ const Header = () => {
               className="flex items-center gap-3 flex-shrink-0 whitespace-nowrap min-w-fit"
             >
               <img
-                src="/icons/icon.svg"
+                src="/logo-mark.png"
                 alt=""
                 className="h-9 w-9 flex-shrink-0 object-contain"
                 onError={(e) => {

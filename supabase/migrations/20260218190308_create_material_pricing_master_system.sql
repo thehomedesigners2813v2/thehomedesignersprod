@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS material_pricing_master (
 ALTER TABLE material_pricing_master ENABLE ROW LEVEL SECURITY;
 
 -- Allow authenticated users to read active materials
+DROP POLICY IF EXISTS "Authenticated users can read active master materials" ON material_pricing_master;
 CREATE POLICY "Authenticated users can read active master materials"
   ON material_pricing_master
   FOR SELECT
@@ -73,6 +74,7 @@ CREATE POLICY "Authenticated users can read active master materials"
   USING (is_active = true);
 
 -- Allow admin users to manage master materials
+DROP POLICY IF EXISTS "Admin users can manage master materials" ON material_pricing_master;
 CREATE POLICY "Admin users can manage master materials"
   ON material_pricing_master
   FOR ALL
@@ -100,7 +102,8 @@ BEGIN
     WHERE tgname = 'update_material_pricing_master_updated_at'
     AND tgrelid = 'material_pricing_master'::regclass
   ) THEN
-    CREATE TRIGGER update_material_pricing_master_updated_at
+    DROP TRIGGER IF EXISTS update_material_pricing_master_updated_at ON material_pricing_master;
+CREATE TRIGGER update_material_pricing_master_updated_at
       BEFORE UPDATE ON material_pricing_master
       FOR EACH ROW
       EXECUTE FUNCTION update_updated_at_column();

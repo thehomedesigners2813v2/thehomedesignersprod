@@ -28,6 +28,7 @@ USING (
   )
 );
 
+DROP POLICY IF EXISTS "Admins can insert wallpapers" ON wallpapers_3d;
 CREATE POLICY "Admins can insert wallpapers"
 ON wallpapers_3d FOR INSERT
 TO authenticated
@@ -38,6 +39,7 @@ WITH CHECK (
   )
 );
 
+DROP POLICY IF EXISTS "Admins can update wallpapers" ON wallpapers_3d;
 CREATE POLICY "Admins can update wallpapers"
 ON wallpapers_3d FOR UPDATE
 TO authenticated
@@ -54,6 +56,7 @@ WITH CHECK (
   )
 );
 
+DROP POLICY IF EXISTS "Admins can delete wallpapers" ON wallpapers_3d;
 CREATE POLICY "Admins can delete wallpapers"
 ON wallpapers_3d FOR DELETE
 TO authenticated
@@ -64,6 +67,7 @@ USING (
   )
 );
 
+DROP POLICY IF EXISTS "Anyone can view active wallpapers" ON wallpapers_3d;
 CREATE POLICY "Anyone can view active wallpapers"
 ON wallpapers_3d FOR SELECT
 TO public

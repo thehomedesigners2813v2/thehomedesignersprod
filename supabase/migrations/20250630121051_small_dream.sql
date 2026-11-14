@@ -39,6 +39,7 @@ ALTER TABLE vastu_analyses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vastu_recommendations ENABLE ROW LEVEL SECURITY;
 
 -- Policies for vastu_analyses
+DROP POLICY IF EXISTS "Customers can view their own vastu analyses" ON vastu_analyses;
 CREATE POLICY "Customers can view their own vastu analyses"
   ON vastu_analyses
   FOR SELECT
@@ -51,6 +52,7 @@ CREATE POLICY "Customers can view their own vastu analyses"
     )
   );
 
+DROP POLICY IF EXISTS "Designers can view vastu analyses for assigned projects" ON vastu_analyses;
 CREATE POLICY "Designers can view vastu analyses for assigned projects"
   ON vastu_analyses
   FOR SELECT
@@ -66,6 +68,7 @@ CREATE POLICY "Designers can view vastu analyses for assigned projects"
   );
 
 -- Policies for vastu_recommendations
+DROP POLICY IF EXISTS "Customers can view their own vastu recommendations" ON vastu_recommendations;
 CREATE POLICY "Customers can view their own vastu recommendations"
   ON vastu_recommendations
   FOR SELECT
@@ -79,6 +82,7 @@ CREATE POLICY "Customers can view their own vastu recommendations"
     )
   );
 
+DROP POLICY IF EXISTS "Designers can view vastu recommendations for assigned projects" ON vastu_recommendations;
 CREATE POLICY "Designers can view vastu recommendations for assigned projects"
   ON vastu_recommendations
   FOR SELECT
@@ -95,12 +99,14 @@ CREATE POLICY "Designers can view vastu recommendations for assigned projects"
   );
 
 -- System policies for inserting analyses and recommendations
+DROP POLICY IF EXISTS "System can insert vastu analyses" ON vastu_analyses;
 CREATE POLICY "System can insert vastu analyses"
   ON vastu_analyses
   FOR INSERT
   TO authenticated
   WITH CHECK (true);
 
+DROP POLICY IF EXISTS "System can insert vastu recommendations" ON vastu_recommendations;
 CREATE POLICY "System can insert vastu recommendations"
   ON vastu_recommendations
   FOR INSERT
@@ -108,6 +114,7 @@ CREATE POLICY "System can insert vastu recommendations"
   WITH CHECK (true);
 
 -- Trigger to automatically update updated_at
+DROP TRIGGER IF EXISTS update_vastu_analyses_updated_at ON vastu_analyses;
 CREATE TRIGGER update_vastu_analyses_updated_at
   BEFORE UPDATE ON vastu_analyses
   FOR EACH ROW

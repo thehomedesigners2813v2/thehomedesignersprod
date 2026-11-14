@@ -91,6 +91,7 @@ JOIN designers d ON d.id = q.designer_id;
 GRANT SELECT ON customer_quotes_with_items TO authenticated;
 
 -- Create a function to get customer quotes with items
+DROP FUNCTION IF EXISTS get_customer_quotes(uuid);
 CREATE OR REPLACE FUNCTION get_customer_quotes(customer_user_id uuid DEFAULT auth.uid())
 RETURNS TABLE (
   id uuid,

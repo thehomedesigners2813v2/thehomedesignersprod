@@ -16,6 +16,7 @@
 */
 
 -- Add policy for admin users to view all site settings
+DROP POLICY IF EXISTS "Admin users can view all site settings" ON site_settings;
 CREATE POLICY "Admin users can view all site settings"
   ON site_settings
   FOR SELECT

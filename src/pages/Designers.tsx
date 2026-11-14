@@ -50,7 +50,7 @@ const Designers = () => {
       
       const { data, error } = await supabase
         .from('designers')
-        .select('*')
+        .select('id, user_id, name, specialization, experience, location, bio, website, starting_price, profile_image, portfolio_images, services, materials_expertise, awards, rating, total_reviews, total_projects, is_verified, is_active, business_type, google_location_url, created_at, updated_at')
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 

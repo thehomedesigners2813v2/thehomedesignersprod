@@ -156,10 +156,12 @@ ALTER TABLE subscription_payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE subscription_usage_tracking ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for subscription_plans
+DROP POLICY IF EXISTS "Anyone can view active subscription plans" ON subscription_plans;
 CREATE POLICY "Anyone can view active subscription plans"
   ON subscription_plans FOR SELECT
   USING (is_active = true);
 
+DROP POLICY IF EXISTS "Admins can manage subscription plans" ON subscription_plans;
 CREATE POLICY "Admins can manage subscription plans"
   ON subscription_plans FOR ALL
   TO authenticated
@@ -172,6 +174,7 @@ CREATE POLICY "Admins can manage subscription plans"
   );
 
 -- RLS Policies for designer_subscriptions
+DROP POLICY IF EXISTS "Designers can view own subscription" ON designer_subscriptions;
 CREATE POLICY "Designers can view own subscription"
   ON designer_subscriptions FOR SELECT
   TO authenticated
@@ -181,6 +184,7 @@ CREATE POLICY "Designers can view own subscription"
     )
   );
 
+DROP POLICY IF EXISTS "Designers can update own subscription preferences" ON designer_subscriptions;
 CREATE POLICY "Designers can update own subscription preferences"
   ON designer_subscriptions FOR UPDATE
   TO authenticated
@@ -195,6 +199,7 @@ CREATE POLICY "Designers can update own subscription preferences"
     )
   );
 
+DROP POLICY IF EXISTS "Admins can view all subscriptions" ON designer_subscriptions;
 CREATE POLICY "Admins can view all subscriptions"
   ON designer_subscriptions FOR SELECT
   TO authenticated
@@ -206,6 +211,7 @@ CREATE POLICY "Admins can view all subscriptions"
     )
   );
 
+DROP POLICY IF EXISTS "Admins can manage all subscriptions" ON designer_subscriptions;
 CREATE POLICY "Admins can manage all subscriptions"
   ON designer_subscriptions FOR ALL
   TO authenticated
@@ -218,6 +224,7 @@ CREATE POLICY "Admins can manage all subscriptions"
   );
 
 -- RLS Policies for subscription_payments
+DROP POLICY IF EXISTS "Designers can view own payment history" ON subscription_payments;
 CREATE POLICY "Designers can view own payment history"
   ON subscription_payments FOR SELECT
   TO authenticated
@@ -230,6 +237,7 @@ CREATE POLICY "Designers can view own payment history"
     )
   );
 
+DROP POLICY IF EXISTS "Admins can view all payments" ON subscription_payments;
 CREATE POLICY "Admins can view all payments"
   ON subscription_payments FOR SELECT
   TO authenticated
@@ -241,6 +249,7 @@ CREATE POLICY "Admins can view all payments"
     )
   );
 
+DROP POLICY IF EXISTS "Admins can manage payments" ON subscription_payments;
 CREATE POLICY "Admins can manage payments"
   ON subscription_payments FOR ALL
   TO authenticated
@@ -253,6 +262,7 @@ CREATE POLICY "Admins can manage payments"
   );
 
 -- RLS Policies for subscription_usage_tracking
+DROP POLICY IF EXISTS "Designers can view own usage" ON subscription_usage_tracking;
 CREATE POLICY "Designers can view own usage"
   ON subscription_usage_tracking FOR SELECT
   TO authenticated
@@ -265,6 +275,7 @@ CREATE POLICY "Designers can view own usage"
     )
   );
 
+DROP POLICY IF EXISTS "Admins can view all usage" ON subscription_usage_tracking;
 CREATE POLICY "Admins can view all usage"
   ON subscription_usage_tracking FOR SELECT
   TO authenticated

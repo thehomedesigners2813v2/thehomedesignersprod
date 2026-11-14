@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { CheckCircle, Clock, AlertCircle, Loader2, Info, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
@@ -8,6 +8,7 @@ interface ProjectStatusUpdateProps {
   projectId: string;
   currentStatus: string;
   onStatusUpdate: () => void;
+  refreshTrigger?: number;
 }
 
 interface CompletionDetails {
@@ -19,7 +20,8 @@ interface CompletionDetails {
 const ProjectStatusUpdate: React.FC<ProjectStatusUpdateProps> = ({
   projectId,
   currentStatus,
-  onStatusUpdate
+  onStatusUpdate,
+  refreshTrigger = 0
 }) => {
   const { user } = useAuth();
   const { designer, isDesigner } = useDesignerProfile();
@@ -27,11 +29,54 @@ const ProjectStatusUpdate: React.FC<ProjectStatusUpdateProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [completionReady, setCompletionReady] = useState({
+    loaded: false,
+    billSettled: false,
+    fullyUpdated: false
+  });
   const [completionDetails, setCompletionDetails] = useState<CompletionDetails>({
     challenges_solutions: '',
     project_timeline_details: '',
     materials_cost_breakdown: ''
   });
+
+  useEffect(() => {
+    let active = true;
+    const loadCompletionReady = async () => {
+      const [billResult, advanceResult, paymentResult, updateResult] = await Promise.all([
+        supabase.from('project_bills').select('total_amount').eq('project_id', projectId),
+        supabase.from('quote_advance_payments').select('amount').eq('project_id', projectId).eq('status', 'paid'),
+        supabase.from('project_payment_requests').select('amount').eq('project_id', projectId).eq('status', 'paid'),
+        supabase.from('project_updates').select('id').eq('project_id', projectId).gte('completion_percentage', 100).limit(1)
+      ]);
+      if (!active) return;
+      const billTotal = (billResult.data || []).reduce((sum, row) => sum + Number(row.total_amount || 0), 0);
+      const received = (advanceResult.data || []).reduce((sum, row) => sum + Number(row.amount || 0), 0)
+        + (paymentResult.data || []).reduce((sum, row) => sum + Number(row.amount || 0), 0);
+      setCompletionReady({
+        loaded: true,
+        billSettled: billTotal > 0 && received + 0.01 >= billTotal,
+        fullyUpdated: (updateResult.data || []).length > 0
+      });
+    };
+    loadCompletionReady();
+    return () => {
+      active = false;
+    };
+  }, [projectId, refreshTrigger]);
+
+  const completionBlockMessage = () => {
+    if (!completionReady.loaded) {
+      return 'Checking the bill and project updates. Try again in a moment.';
+    }
+    const missing: string[] = [];
+    if (!completionReady.billSettled) missing.push('the full bill amount has been received');
+    if (!completionReady.fullyUpdated) missing.push('a project update records 100% completion');
+    if (missing.length === 0) return null;
+    return `Completed stays unavailable until ${missing.join(' and ')}.`;
+  };
+
+  const canComplete = completionReady.loaded && completionReady.billSettled && completionReady.fullyUpdated;
 
   // Define status progression logic
   const isStatusDisabled = (status: string) => {
@@ -62,11 +107,16 @@ const ProjectStatusUpdate: React.FC<ProjectStatusUpdateProps> = ({
     }
 
     if (newStatus === currentStatus) {
-      return; // No change needed
+      return;
     }
 
-    // If marking as completed, show modal to collect completion details
     if (newStatus === 'completed') {
+      const blockMessage = completionBlockMessage();
+      if (blockMessage) {
+        setSuccess(null);
+        setError(blockMessage);
+        return;
+      }
       setShowCompletionModal(true);
       return;
     }
@@ -106,6 +156,13 @@ const ProjectStatusUpdate: React.FC<ProjectStatusUpdateProps> = ({
   const handleCompleteProject = async () => {
     if (!user || !isDesigner || !designer) {
       setError('You must be logged in as a designer to complete projects');
+      return;
+    }
+
+    const blockMessage = completionBlockMessage();
+    if (blockMessage) {
+      setShowCompletionModal(false);
+      setError(blockMessage);
       return;
     }
 
@@ -194,15 +251,26 @@ const ProjectStatusUpdate: React.FC<ProjectStatusUpdateProps> = ({
         )}
 
         <div className="flex flex-wrap gap-2">
-          {statusOptions.map((status) => (
+          {statusOptions.map((status) => {
+            const lockedComplete = status.value === 'completed' && currentStatus !== 'completed' && !canComplete;
+            const disabled = loading || status.value === currentStatus || isStatusDisabled(status.value);
+            return (
             <button
               key={status.value}
-              onClick={() => handleStatusChange(status.value)}
-              disabled={loading || status.value === currentStatus || isStatusDisabled(status.value)}
+              type="button"
+              onClick={() => {
+                if (lockedComplete) {
+                  setSuccess(null);
+                  setError(completionBlockMessage());
+                  return;
+                }
+                handleStatusChange(status.value);
+              }}
+              disabled={disabled && !lockedComplete}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 status.value === currentStatus
                   ? `${status.color} border border-current`
-                  : isStatusDisabled(status.value)
+                  : isStatusDisabled(status.value) || lockedComplete
                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-50'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -212,7 +280,8 @@ const ProjectStatusUpdate: React.FC<ProjectStatusUpdateProps> = ({
               ) : null}
               {status.label}
             </button>
-          ))}
+            );
+          })}
         </div>
 
         <div className="mt-4 text-sm text-gray-500 space-y-2">

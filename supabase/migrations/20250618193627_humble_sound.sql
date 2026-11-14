@@ -35,18 +35,21 @@ CREATE TABLE IF NOT EXISTS project_shares (
 ALTER TABLE project_shares ENABLE ROW LEVEL SECURITY;
 
 -- Policies for customers to manage their shares
+DROP POLICY IF EXISTS "Customers can read own shares" ON project_shares;
 CREATE POLICY "Customers can read own shares"
   ON project_shares
   FOR SELECT
   TO authenticated
   USING (auth.uid() = customer_id);
 
+DROP POLICY IF EXISTS "Customers can insert own shares" ON project_shares;
 CREATE POLICY "Customers can insert own shares"
   ON project_shares
   FOR INSERT
   TO authenticated
   WITH CHECK (auth.uid() = customer_id);
 
+DROP POLICY IF EXISTS "Customers can update own shares" ON project_shares;
 CREATE POLICY "Customers can update own shares"
   ON project_shares
   FOR UPDATE
@@ -54,6 +57,7 @@ CREATE POLICY "Customers can update own shares"
   USING (auth.uid() = customer_id);
 
 -- Policy for designers to view shares sent to them
+DROP POLICY IF EXISTS "Designers can view shares sent to them" ON project_shares;
 CREATE POLICY "Designers can view shares sent to them"
   ON project_shares
   FOR SELECT
@@ -68,6 +72,7 @@ CREATE POLICY "Designers can view shares sent to them"
   );
 
 -- Trigger to automatically update updated_at
+DROP TRIGGER IF EXISTS update_project_shares_updated_at ON project_shares;
 CREATE TRIGGER update_project_shares_updated_at
   BEFORE UPDATE ON project_shares
   FOR EACH ROW

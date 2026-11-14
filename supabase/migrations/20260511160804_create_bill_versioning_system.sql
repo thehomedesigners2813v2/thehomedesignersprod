@@ -59,6 +59,7 @@ END $$;
 ALTER TABLE bill_versions ENABLE ROW LEVEL SECURITY;
 
 -- RLS: Designers can view versions of their own bills
+DROP POLICY IF EXISTS "Designers can view own bill versions" ON bill_versions;
 CREATE POLICY "Designers can view own bill versions"
   ON bill_versions FOR SELECT
   TO authenticated
@@ -72,6 +73,7 @@ CREATE POLICY "Designers can view own bill versions"
   );
 
 -- RLS: Customers can view versions of bills for their projects
+DROP POLICY IF EXISTS "Customers can view bill versions for own projects" ON bill_versions;
 CREATE POLICY "Customers can view bill versions for own projects"
   ON bill_versions FOR SELECT
   TO authenticated
@@ -85,6 +87,7 @@ CREATE POLICY "Customers can view bill versions for own projects"
   );
 
 -- RLS: Allow system inserts (trigger runs as SECURITY DEFINER)
+DROP POLICY IF EXISTS "System can insert bill versions" ON bill_versions;
 CREATE POLICY "System can insert bill versions"
   ON bill_versions FOR INSERT
   TO authenticated

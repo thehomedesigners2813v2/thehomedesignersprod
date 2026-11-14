@@ -20,6 +20,7 @@ DROP POLICY IF EXISTS "Verified designers can view their quotes" ON designer_quo
 DROP POLICY IF EXISTS "Verified designers can create quotes" ON designer_quotes;
 DROP POLICY IF EXISTS "Verified designers can update their quotes" ON designer_quotes;
 
+DROP POLICY IF EXISTS "Only verified designers can view quotes" ON designer_quotes;
 CREATE POLICY "Only verified designers can view quotes"
   ON designer_quotes
   FOR SELECT
@@ -32,6 +33,7 @@ CREATE POLICY "Only verified designers can view quotes"
     )
   );
 
+DROP POLICY IF EXISTS "Only verified designers can create quotes" ON designer_quotes;
 CREATE POLICY "Only verified designers can create quotes"
   ON designer_quotes
   FOR INSERT
@@ -44,6 +46,7 @@ CREATE POLICY "Only verified designers can create quotes"
     )
   );
 
+DROP POLICY IF EXISTS "Only verified designers can update quotes" ON designer_quotes;
 CREATE POLICY "Only verified designers can update quotes"
   ON designer_quotes
   FOR UPDATE
@@ -66,6 +69,7 @@ CREATE POLICY "Only verified designers can update quotes"
 -- Update customers (projects) policies
 DROP POLICY IF EXISTS "Verified designers can view assigned projects" ON customers;
 
+DROP POLICY IF EXISTS "Only verified designers can view assigned projects" ON customers;
 CREATE POLICY "Only verified designers can view assigned projects"
   ON customers
   FOR SELECT
@@ -81,6 +85,7 @@ CREATE POLICY "Only verified designers can view assigned projects"
 -- Update designer_subscriptions policies
 DROP POLICY IF EXISTS "Designers can view their subscription" ON designer_subscriptions;
 
+DROP POLICY IF EXISTS "Only verified designers can view subscription" ON designer_subscriptions;
 CREATE POLICY "Only verified designers can view subscription"
   ON designer_subscriptions
   FOR SELECT
@@ -97,6 +102,7 @@ CREATE POLICY "Only verified designers can view subscription"
 DROP POLICY IF EXISTS "Designers can view their materials" ON designer_material_prices;
 DROP POLICY IF EXISTS "Designers can manage their materials" ON designer_material_prices;
 
+DROP POLICY IF EXISTS "Only verified designers can view materials" ON designer_material_prices;
 CREATE POLICY "Only verified designers can view materials"
   ON designer_material_prices
   FOR SELECT
@@ -109,6 +115,7 @@ CREATE POLICY "Only verified designers can view materials"
     )
   );
 
+DROP POLICY IF EXISTS "Only verified designers can manage materials" ON designer_material_prices;
 CREATE POLICY "Only verified designers can manage materials"
   ON designer_material_prices
   FOR ALL
@@ -131,6 +138,7 @@ CREATE POLICY "Only verified designers can manage materials"
 -- Update project_designs policies
 DROP POLICY IF EXISTS "Designers can manage their project designs" ON project_designs;
 
+DROP POLICY IF EXISTS "Only verified designers can manage project designs" ON project_designs;
 CREATE POLICY "Only verified designers can manage project designs"
   ON project_designs
   FOR ALL

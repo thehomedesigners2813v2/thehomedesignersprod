@@ -22,6 +22,7 @@ DROP POLICY IF EXISTS "Users can delete their own attachments" ON storage.object
 
 -- Simplified policy: Allow authenticated users to upload to quotation-attachments
 -- We'll verify ownership at the application level
+DROP POLICY IF EXISTS "Authenticated users can upload attachments" ON storage.objects;
 CREATE POLICY "Authenticated users can upload attachments"
 ON storage.objects
 FOR INSERT
@@ -31,6 +32,7 @@ WITH CHECK (
 );
 
 -- Policy: Allow users to view files in quotation-attachments
+DROP POLICY IF EXISTS "Authenticated users can view attachments" ON storage.objects;
 CREATE POLICY "Authenticated users can view attachments"
 ON storage.objects
 FOR SELECT
@@ -40,6 +42,7 @@ USING (
 );
 
 -- Policy: Allow users to update files in quotation-attachments
+DROP POLICY IF EXISTS "Authenticated users can update attachments" ON storage.objects;
 CREATE POLICY "Authenticated users can update attachments"
 ON storage.objects
 FOR UPDATE
@@ -49,6 +52,7 @@ USING (
 );
 
 -- Policy: Allow users to delete files in quotation-attachments
+DROP POLICY IF EXISTS "Authenticated users can delete attachments" ON storage.objects;
 CREATE POLICY "Authenticated users can delete attachments"
 ON storage.objects
 FOR DELETE

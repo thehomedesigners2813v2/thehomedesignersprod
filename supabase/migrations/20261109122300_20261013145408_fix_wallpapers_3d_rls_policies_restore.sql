@@ -26,17 +26,20 @@ CREATE POLICY "Admins can view all wallpapers"
   TO authenticated
   USING (EXISTS (SELECT 1 FROM admin_users WHERE admin_users.user_id = auth.uid()));
 
+DROP POLICY IF EXISTS "Admins can insert wallpapers" ON wallpapers_3d;
 CREATE POLICY "Admins can insert wallpapers"
   ON wallpapers_3d FOR INSERT
   TO authenticated
   WITH CHECK (EXISTS (SELECT 1 FROM admin_users WHERE admin_users.user_id = auth.uid()));
 
+DROP POLICY IF EXISTS "Admins can update wallpapers" ON wallpapers_3d;
 CREATE POLICY "Admins can update wallpapers"
   ON wallpapers_3d FOR UPDATE
   TO authenticated
   USING (EXISTS (SELECT 1 FROM admin_users WHERE admin_users.user_id = auth.uid()))
   WITH CHECK (EXISTS (SELECT 1 FROM admin_users WHERE admin_users.user_id = auth.uid()));
 
+DROP POLICY IF EXISTS "Admins can delete wallpapers" ON wallpapers_3d;
 CREATE POLICY "Admins can delete wallpapers"
   ON wallpapers_3d FOR DELETE
   TO authenticated

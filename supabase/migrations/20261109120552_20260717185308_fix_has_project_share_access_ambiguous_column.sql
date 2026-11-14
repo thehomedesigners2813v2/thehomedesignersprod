@@ -1,6 +1,7 @@
 DROP FUNCTION IF EXISTS public.has_project_share_access(uuid) CASCADE;
 DROP FUNCTION IF EXISTS public.is_assigned_designer(uuid) CASCADE;
 
+DROP FUNCTION IF EXISTS has_project_share_access(uuid);
 CREATE OR REPLACE FUNCTION public.has_project_share_access(p_customer_id uuid)
 RETURNS boolean
 LANGUAGE plpgsql
@@ -27,6 +28,7 @@ BEGIN
 END;
 $function$;
 
+DROP FUNCTION IF EXISTS is_assigned_designer(uuid);
 CREATE OR REPLACE FUNCTION public.is_assigned_designer(p_customer_id uuid)
 RETURNS boolean
 LANGUAGE plpgsql

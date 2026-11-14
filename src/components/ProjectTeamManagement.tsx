@@ -34,6 +34,7 @@ const ProjectTeamManagement: React.FC<ProjectTeamManagementProps> = ({
     role: '',
     contact: ''
   });
+  const [contactError, setContactError] = useState<string | null>(null);
 
   // Predefined roles for dropdown
   const roles = [
@@ -84,6 +85,13 @@ const ProjectTeamManagement: React.FC<ProjectTeamManagementProps> = ({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    if (name === 'contact') {
+      const digitsOnly = value.replace(/\D/g, '').slice(0, 10);
+      setFormData(prev => ({ ...prev, contact: digitsOnly }));
+      setContactError(digitsOnly.length > 0 && digitsOnly.length < 10 ? 'Phone number must be exactly 10 digits' : null);
+      if (error) setError(null);
+      return;
+    }
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -107,8 +115,9 @@ const ProjectTeamManagement: React.FC<ProjectTeamManagementProps> = ({
       setError('Role is required');
       return;
     }
-    if (!formData.contact.trim()) {
-      setError('Contact information is required');
+    if (!/^\d{10}$/.test(formData.contact)) {
+      setContactError('Phone number must be exactly 10 digits');
+      setError('Phone number must be exactly 10 digits');
       return;
     }
 
@@ -134,6 +143,7 @@ const ProjectTeamManagement: React.FC<ProjectTeamManagementProps> = ({
       setTeamMembers(prev => [...prev, data]);
       setSuccess('Team member added successfully');
       setFormData({ name: '', role: '', contact: '' });
+      setContactError(null);
       setShowAddForm(false);
 
       // Clear success message after 3 seconds
@@ -275,17 +285,25 @@ const ProjectTeamManagement: React.FC<ProjectTeamManagementProps> = ({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Contact *
+                  Contact * <span className="text-xs text-gray-500">(10 digits)</span>
                 </label>
                 <input
-                  type="text"
+                  type="tel"
                   name="contact"
                   value={formData.contact}
                   onChange={handleInputChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  placeholder="Phone or email"
+                  className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                    contactError ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="9876543210"
+                  inputMode="numeric"
+                  pattern="\d{10}"
+                  maxLength={10}
                   required
                 />
+                {contactError && (
+                  <p className="text-xs text-red-600 mt-1">{contactError}</p>
+                )}
               </div>
             </div>
 

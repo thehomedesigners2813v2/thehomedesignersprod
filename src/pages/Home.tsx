@@ -39,6 +39,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup');
 
   useEffect(() => {
     const loadHomepage = async () => {
@@ -83,7 +84,10 @@ export default function Home() {
 
   const handleProjectRegistration = () => {
     if (user) navigate('/register-customer');
-    else setShowAuthModal(true);
+    else {
+      setAuthMode('signup');
+      setShowAuthModal(true);
+    }
   };
 
   return <div className="bg-[#fcfaf7] text-secondary-800">
@@ -94,9 +98,8 @@ export default function Home() {
           <p className="text-sm font-bold uppercase tracking-[0.22em] text-primary-700">One platform. Multiple interior designers.</p>
           <h1 className="mt-5 max-w-2xl font-serif text-4xl font-bold leading-[1.08] text-secondary-800 sm:text-5xl lg:text-6xl">Find the Right Interior Designer for Your Dream Home</h1>
           <p className="mt-6 max-w-xl text-lg leading-8 text-stone-700">Compare portfolios, explore offers and connect with interior designers—all in one place.</p>
-          <div className="mt-8 grid gap-3 sm:grid-cols-2">
-            <button onClick={handleProjectRegistration} className="group flex min-h-20 items-center justify-between rounded-xl bg-primary-600 px-5 py-4 text-left text-white shadow-lg shadow-primary-600/20 transition hover:-translate-y-0.5 hover:bg-primary-700"><span><span className="block font-semibold">Register Your Project</span><span className="mt-1 block text-sm text-white/80">Get quotes from verified designers</span></span><ArrowRight className="h-5 w-5 transition group-hover:translate-x-1" aria-hidden="true" /></button>
-            <Link to="/register-designer" className="group flex min-h-20 items-center justify-between rounded-xl bg-secondary-700 px-5 py-4 text-left text-white shadow-lg shadow-secondary-700/20 transition hover:-translate-y-0.5 hover:bg-secondary-800"><span><span className="block font-semibold">Register as a Designer</span><span className="mt-1 block text-sm text-white/80">Showcase your work and get clients</span></span><ArrowRight className="h-5 w-5 transition group-hover:translate-x-1" aria-hidden="true" /></Link>
+          <div className="mt-8 max-w-md">
+            <button onClick={handleProjectRegistration} className="group flex min-h-20 w-full items-center justify-between rounded-xl bg-primary-600 px-5 py-4 text-left text-white shadow-lg shadow-primary-600/20 transition hover:-translate-y-0.5 hover:bg-primary-700"><span><span className="block font-semibold">Register Your Project</span><span className="mt-1 block text-sm text-white/80">Get quotes from verified designers</span></span><ArrowRight className="h-5 w-5 transition group-hover:translate-x-1" aria-hidden="true" /></button>
           </div>
         </div>
         <div className="relative min-h-[360px] overflow-hidden rounded-[2rem] shadow-2xl lg:min-h-[500px]">
@@ -125,6 +128,6 @@ export default function Home() {
 
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8"><div className="relative overflow-hidden rounded-3xl bg-secondary-800 px-6 py-10 text-white sm:px-12"><div className="relative z-10 flex flex-col items-start justify-between gap-8 lg:flex-row lg:items-center"><div><p className="text-sm font-bold uppercase tracking-[0.2em] text-primary-300">For interior designers</p><h2 className="mt-3 max-w-2xl font-serif text-3xl font-bold sm:text-4xl">Grow your design business with the right homeowners.</h2><p className="mt-3 max-w-2xl text-white/75">Showcase your portfolio, share your offers and connect with homeowners who are ready to create.</p></div><Link to="/register-designer" className="group inline-flex shrink-0 items-center gap-3 rounded-xl bg-primary-600 px-6 py-4 font-semibold text-white transition hover:bg-primary-500">Join as a Designer <ArrowRight className="h-5 w-5 transition group-hover:translate-x-1" aria-hidden="true" /></Link></div><div className="absolute -right-8 -top-16 h-64 w-64 rounded-full border border-white/10" /><div className="absolute -bottom-24 right-24 h-64 w-64 rounded-full border border-white/10" /></div></section>
     </main>
-    <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} mode="signup" onModeChange={() => undefined} onAuthSuccess={() => navigate('/register-customer')} userType="customer" />
+    <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} mode={authMode} onModeChange={setAuthMode} onAuthSuccess={() => navigate('/register-customer')} userType="customer" />
   </div>;
 }

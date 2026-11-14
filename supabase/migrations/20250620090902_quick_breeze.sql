@@ -35,6 +35,7 @@ CREATE POLICY "Designers can view assigned projects"
   );
 
 -- Create updated policy for customers to update their own projects and allow assigned designers
+DROP POLICY IF EXISTS "Customers can update own projects" ON customers;
 CREATE POLICY "Customers can update own projects"
   ON customers
   FOR UPDATE
@@ -53,6 +54,7 @@ CREATE POLICY "Customers can update own projects"
   );
 
 -- Update the project_shares policy to be more specific
+DROP POLICY IF EXISTS "Designers can view shares sent to them" ON project_shares;
 CREATE POLICY "Designers can view shares sent to them"
   ON project_shares
   FOR SELECT

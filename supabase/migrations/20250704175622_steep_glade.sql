@@ -26,6 +26,7 @@ BEGIN
 END $$;
 
 -- Create a more permissive policy for customers to view quotes
+DROP POLICY IF EXISTS "Customers can view quotes for their projects" ON designer_quotes;
 CREATE POLICY "Customers can view quotes for their projects"
   ON designer_quotes
   FOR SELECT
@@ -52,6 +53,7 @@ BEGIN
 END $$;
 
 -- Create a more permissive policy for customers to view quote items
+DROP POLICY IF EXISTS "Customers can view quote items for their projects" ON quote_items;
 CREATE POLICY "Customers can view quote items for their projects"
   ON quote_items
   FOR SELECT

@@ -59,11 +59,13 @@ GRANT EXECUTE ON FUNCTION is_active_admin() TO authenticated;
 GRANT EXECUTE ON FUNCTION is_super_admin() TO authenticated;
 
 -- Recreate the policies using the helper functions (no more recursion)
+DROP POLICY IF EXISTS "Admins can view admin users" ON admin_users;
 CREATE POLICY "Admins can view admin users"
   ON admin_users FOR SELECT
   TO authenticated
   USING (is_active_admin());
 
+DROP POLICY IF EXISTS "Super admins can manage admin users" ON admin_users;
 CREATE POLICY "Super admins can manage admin users"
   ON admin_users
   FOR ALL

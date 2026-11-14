@@ -14,9 +14,10 @@
 */
 
 -- Create policy to allow designers to update status of their assigned projects
+DROP POLICY IF EXISTS "Designers can update assigned project status" ON customers;
 CREATE POLICY "Designers can update assigned project status"
   ON customers
   FOR UPDATE
   TO authenticated
-  USING (assigned_designer_id = auth.uid())
-  WITH CHECK (assigned_designer_id = auth.uid());
+  USING (assigned_designer_id IN (SELECT id FROM designers WHERE user_id = auth.uid()))
+  WITH CHECK (assigned_designer_id IN (SELECT id FROM designers WHERE user_id = auth.uid()));

@@ -81,6 +81,7 @@ DROP POLICY IF EXISTS "Designers can manage their own quote items" ON quote_item
 DROP POLICY IF EXISTS "Customers can view quote items for their projects" ON quote_items;
 
 -- Policies for designer_material_prices
+DROP POLICY IF EXISTS "Designers can manage their own material prices" ON designer_material_prices;
 CREATE POLICY "Designers can manage their own material prices"
   ON designer_material_prices
   FOR ALL
@@ -100,6 +101,7 @@ CREATE POLICY "Designers can manage their own material prices"
     )
   );
 
+DROP POLICY IF EXISTS "Public can read available material prices" ON designer_material_prices;
 CREATE POLICY "Public can read available material prices"
   ON designer_material_prices
   FOR SELECT
@@ -114,6 +116,7 @@ CREATE POLICY "Public can read available material prices"
   );
 
 -- Policies for designer_quotes
+DROP POLICY IF EXISTS "Designers can manage their own quotes" ON designer_quotes;
 CREATE POLICY "Designers can manage their own quotes"
   ON designer_quotes
   FOR ALL
@@ -133,6 +136,7 @@ CREATE POLICY "Designers can manage their own quotes"
     )
   );
 
+DROP POLICY IF EXISTS "Customers can view quotes for their projects" ON designer_quotes;
 CREATE POLICY "Customers can view quotes for their projects"
   ON designer_quotes
   FOR SELECT
@@ -146,6 +150,7 @@ CREATE POLICY "Customers can view quotes for their projects"
   );
 
 -- Policies for quote_items
+DROP POLICY IF EXISTS "Designers can manage their own quote items" ON quote_items;
 CREATE POLICY "Designers can manage their own quote items"
   ON quote_items
   FOR ALL
@@ -167,6 +172,7 @@ CREATE POLICY "Designers can manage their own quote items"
     )
   );
 
+DROP POLICY IF EXISTS "Customers can view quote items for their projects" ON quote_items;
 CREATE POLICY "Customers can view quote items for their projects"
   ON quote_items
   FOR SELECT
@@ -187,7 +193,8 @@ BEGIN
     SELECT 1 FROM pg_trigger 
     WHERE tgname = 'update_designer_material_prices_updated_at'
   ) THEN
-    CREATE TRIGGER update_designer_material_prices_updated_at
+    DROP TRIGGER IF EXISTS update_designer_material_prices_updated_at ON designer_material_prices;
+CREATE TRIGGER update_designer_material_prices_updated_at
       BEFORE UPDATE ON designer_material_prices
       FOR EACH ROW
       EXECUTE FUNCTION update_updated_at_column();
@@ -200,7 +207,8 @@ BEGIN
     SELECT 1 FROM pg_trigger 
     WHERE tgname = 'update_designer_quotes_updated_at'
   ) THEN
-    CREATE TRIGGER update_designer_quotes_updated_at
+    DROP TRIGGER IF EXISTS update_designer_quotes_updated_at ON designer_quotes;
+CREATE TRIGGER update_designer_quotes_updated_at
       BEFORE UPDATE ON designer_quotes
       FOR EACH ROW
       EXECUTE FUNCTION update_updated_at_column();

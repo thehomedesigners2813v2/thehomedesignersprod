@@ -17,12 +17,14 @@ DROP POLICY IF EXISTS "Authenticated users can update own profile image" ON stor
 DROP POLICY IF EXISTS "Authenticated users can delete own profile image" ON storage.objects;
 DROP POLICY IF EXISTS "Anyone can view profile images" ON storage.objects;
 
+DROP POLICY IF EXISTS "designer_profiles_insert" ON storage.objects;
 CREATE POLICY "designer_profiles_insert"
   ON storage.objects
   FOR INSERT
   TO authenticated
   WITH CHECK (bucket_id = 'designer-profiles');
 
+DROP POLICY IF EXISTS "designer_profiles_update" ON storage.objects;
 CREATE POLICY "designer_profiles_update"
   ON storage.objects
   FOR UPDATE
@@ -30,12 +32,14 @@ CREATE POLICY "designer_profiles_update"
   USING (bucket_id = 'designer-profiles')
   WITH CHECK (bucket_id = 'designer-profiles');
 
+DROP POLICY IF EXISTS "designer_profiles_delete" ON storage.objects;
 CREATE POLICY "designer_profiles_delete"
   ON storage.objects
   FOR DELETE
   TO authenticated
   USING (bucket_id = 'designer-profiles');
 
+DROP POLICY IF EXISTS "designer_profiles_select" ON storage.objects;
 CREATE POLICY "designer_profiles_select"
   ON storage.objects
   FOR SELECT

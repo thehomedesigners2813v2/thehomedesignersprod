@@ -34,6 +34,12 @@ export default function NotificationBell() {
         // Customer views their own project
         navigate(`/customer-projects`);
       }
+    } else if (notification.reference_type === 'bill' && notification.reference_id) {
+      if (notification.user_type === 'designer') {
+        navigate(`/project-bill/${notification.reference_id}`);
+      } else {
+        navigate(`/my-bill/${notification.reference_id}`);
+      }
     } else if (notification.reference_type === 'quotation') {
       if (notification.user_type === 'designer') {
         // Designer views their quotes

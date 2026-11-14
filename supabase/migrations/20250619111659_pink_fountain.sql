@@ -16,6 +16,7 @@
 DROP POLICY IF EXISTS "Designers can view customer projects" ON customers;
 
 -- Create a more specific policy that only allows designers to see projects assigned to them
+DROP POLICY IF EXISTS "Designers can view assigned projects" ON customers;
 CREATE POLICY "Designers can view assigned projects"
   ON customers
   FOR SELECT

@@ -9,6 +9,7 @@ DROP FUNCTION IF EXISTS public.has_project_share_access(uuid) CASCADE;
 DROP FUNCTION IF EXISTS public.is_assigned_designer(uuid) CASCADE;
 
 -- Recreate with disambiguated parameter names
+DROP FUNCTION IF EXISTS has_project_share_access(uuid);
 CREATE OR REPLACE FUNCTION public.has_project_share_access(p_customer_id uuid)
 RETURNS boolean
 LANGUAGE plpgsql
@@ -35,6 +36,7 @@ BEGIN
 END;
 $function$;
 
+DROP FUNCTION IF EXISTS is_assigned_designer(uuid);
 CREATE OR REPLACE FUNCTION public.is_assigned_designer(p_customer_id uuid)
 RETURNS boolean
 LANGUAGE plpgsql
@@ -62,11 +64,13 @@ END;
 $function$;
 
 -- Recreate the RLS policies that were dropped by CASCADE
+DROP POLICY IF EXISTS "Designers can view customer projects" ON customers;
 CREATE POLICY "Designers can view customer projects"
   ON customers FOR SELECT
   TO authenticated
   USING (has_project_share_access(id));
 
+DROP POLICY IF EXISTS "Designers can view assigned projects" ON customers;
 CREATE POLICY "Designers can view assigned projects"
   ON customers FOR SELECT
   TO authenticated

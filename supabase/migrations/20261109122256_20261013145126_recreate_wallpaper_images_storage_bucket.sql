@@ -29,6 +29,7 @@ CREATE POLICY "Admins can upload wallpaper images"
     EXISTS (SELECT 1 FROM admin_users WHERE admin_users.user_id = auth.uid())
   );
 
+DROP POLICY IF EXISTS "Admins can update wallpaper images" ON storage.objects;
 CREATE POLICY "Admins can update wallpaper images"
   ON storage.objects FOR UPDATE
   TO authenticated
@@ -41,6 +42,7 @@ CREATE POLICY "Admins can update wallpaper images"
     EXISTS (SELECT 1 FROM admin_users WHERE admin_users.user_id = auth.uid())
   );
 
+DROP POLICY IF EXISTS "Admins can delete wallpaper images" ON storage.objects;
 CREATE POLICY "Admins can delete wallpaper images"
   ON storage.objects FOR DELETE
   TO authenticated

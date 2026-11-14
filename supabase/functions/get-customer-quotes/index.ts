@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
       .select(`
         *,
         designer:designers(id, name, email, phone, specialization, profile_image),
-        project:customers(id, project_name)
+        project:customers!designer_quotes_project_id_fkey(id, project_name)
       `)
       .in('project_id', projectIds)
       .order('created_at', { ascending: false })

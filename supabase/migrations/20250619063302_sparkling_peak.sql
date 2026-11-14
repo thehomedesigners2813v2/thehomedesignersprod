@@ -36,6 +36,7 @@ CREATE POLICY "Designers can view shares sent to them"
 
 -- Create a policy that allows designers to view customer projects
 -- This is needed for the JOIN in the query to work
+DROP POLICY IF EXISTS "Designers can view customer projects" ON customers;
 CREATE POLICY "Designers can view customer projects"
   ON customers
   FOR SELECT

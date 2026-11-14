@@ -18,7 +18,8 @@ DO $$ BEGIN
     WHERE tablename = 'designers' 
     AND policyname = 'Admins can view all designers'
   ) THEN
-    CREATE POLICY "Admins can view all designers"
+    DROP POLICY IF EXISTS "Admins can view all designers" ON designers;
+CREATE POLICY "Admins can view all designers"
       ON designers FOR SELECT
       TO authenticated
       USING (
@@ -37,7 +38,8 @@ DO $$ BEGIN
     WHERE tablename = 'designers' 
     AND policyname = 'Admins can update all designers'
   ) THEN
-    CREATE POLICY "Admins can update all designers"
+    DROP POLICY IF EXISTS "Admins can update all designers" ON designers;
+CREATE POLICY "Admins can update all designers"
       ON designers FOR UPDATE
       TO authenticated
       USING (
@@ -64,7 +66,8 @@ DO $$ BEGIN
     WHERE tablename = 'customers' 
     AND policyname = 'Admins can view all customers'
   ) THEN
-    CREATE POLICY "Admins can view all customers"
+    DROP POLICY IF EXISTS "Admins can view all customers" ON customers;
+CREATE POLICY "Admins can view all customers"
       ON customers FOR SELECT
       TO authenticated
       USING (
@@ -84,7 +87,8 @@ DO $$ BEGIN
     WHERE tablename = 'designer_quotes' 
     AND policyname = 'Admins can view all quotes'
   ) THEN
-    CREATE POLICY "Admins can view all quotes"
+    DROP POLICY IF EXISTS "Admins can view all quotes" ON designer_quotes;
+CREATE POLICY "Admins can view all quotes"
       ON designer_quotes FOR SELECT
       TO authenticated
       USING (
@@ -104,7 +108,8 @@ DO $$ BEGIN
     WHERE tablename = 'designer_deals' 
     AND policyname = 'Admins can view all deals'
   ) THEN
-    CREATE POLICY "Admins can view all deals"
+    DROP POLICY IF EXISTS "Admins can view all deals" ON designer_deals;
+CREATE POLICY "Admins can view all deals"
       ON designer_deals FOR SELECT
       TO authenticated
       USING (
@@ -123,7 +128,8 @@ DO $$ BEGIN
     WHERE tablename = 'designer_deals' 
     AND policyname = 'Admins can insert deals'
   ) THEN
-    CREATE POLICY "Admins can insert deals"
+    DROP POLICY IF EXISTS "Admins can insert deals" ON designer_deals;
+CREATE POLICY "Admins can insert deals"
       ON designer_deals FOR INSERT
       TO authenticated
       WITH CHECK (
@@ -142,7 +148,8 @@ DO $$ BEGIN
     WHERE tablename = 'designer_deals' 
     AND policyname = 'Admins can update deals'
   ) THEN
-    CREATE POLICY "Admins can update deals"
+    DROP POLICY IF EXISTS "Admins can update deals" ON designer_deals;
+CREATE POLICY "Admins can update deals"
       ON designer_deals FOR UPDATE
       TO authenticated
       USING (
@@ -168,7 +175,8 @@ DO $$ BEGIN
     WHERE tablename = 'designer_deals' 
     AND policyname = 'Admins can delete deals'
   ) THEN
-    CREATE POLICY "Admins can delete deals"
+    DROP POLICY IF EXISTS "Admins can delete deals" ON designer_deals;
+CREATE POLICY "Admins can delete deals"
       ON designer_deals FOR DELETE
       TO authenticated
       USING (
@@ -188,7 +196,8 @@ DO $$ BEGIN
     WHERE tablename = 'admin_users' 
     AND policyname = 'Admins can view admin users'
   ) THEN
-    CREATE POLICY "Admins can view admin users"
+    DROP POLICY IF EXISTS "Admins can view admin users" ON admin_users;
+CREATE POLICY "Admins can view admin users"
       ON admin_users FOR SELECT
       TO authenticated
       USING (
@@ -208,7 +217,8 @@ DO $$ BEGIN
     WHERE tablename = 'designer_projects_earnings' 
     AND policyname = 'Admins can view all earnings'
   ) THEN
-    CREATE POLICY "Admins can view all earnings"
+    DROP POLICY IF EXISTS "Admins can view all earnings" ON designer_projects_earnings;
+CREATE POLICY "Admins can view all earnings"
       ON designer_projects_earnings FOR SELECT
       TO authenticated
       USING (

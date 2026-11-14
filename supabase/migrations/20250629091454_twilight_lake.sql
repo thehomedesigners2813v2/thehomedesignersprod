@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS designer_material_prices (
 ALTER TABLE designer_material_prices ENABLE ROW LEVEL SECURITY;
 
 -- Policies for designer_material_prices
+DROP POLICY IF EXISTS "Designers can manage their own material prices" ON designer_material_prices;
 CREATE POLICY "Designers can manage their own material prices"
   ON designer_material_prices
   FOR ALL
@@ -51,6 +52,7 @@ CREATE POLICY "Designers can manage their own material prices"
     )
   );
 
+DROP POLICY IF EXISTS "Public can read available material prices" ON designer_material_prices;
 CREATE POLICY "Public can read available material prices"
   ON designer_material_prices
   FOR SELECT
@@ -65,6 +67,7 @@ CREATE POLICY "Public can read available material prices"
   );
 
 -- Trigger to automatically update updated_at
+DROP TRIGGER IF EXISTS update_designer_material_prices_updated_at ON designer_material_prices;
 CREATE TRIGGER update_designer_material_prices_updated_at
   BEFORE UPDATE ON designer_material_prices
   FOR EACH ROW

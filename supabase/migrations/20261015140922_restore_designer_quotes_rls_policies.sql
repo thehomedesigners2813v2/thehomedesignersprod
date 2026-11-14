@@ -5,6 +5,7 @@
 -- tried to save/send quotations.
 
 -- SELECT: designers can view their own quotes
+DROP POLICY IF EXISTS "Designers can view their own quotes" ON designer_quotes;
 CREATE POLICY "Designers can view their own quotes"
   ON designer_quotes
   FOR SELECT
@@ -18,6 +19,7 @@ CREATE POLICY "Designers can view their own quotes"
   );
 
 -- SELECT: customers can view quotes for their projects
+DROP POLICY IF EXISTS "Customers can view quotes for their projects" ON designer_quotes;
 CREATE POLICY "Customers can view quotes for their projects"
   ON designer_quotes
   FOR SELECT
@@ -31,6 +33,7 @@ CREATE POLICY "Customers can view quotes for their projects"
   );
 
 -- INSERT: designers can create quotes for their own designer account
+DROP POLICY IF EXISTS "Designers can insert their own quotes" ON designer_quotes;
 CREATE POLICY "Designers can insert their own quotes"
   ON designer_quotes
   FOR INSERT
@@ -44,6 +47,7 @@ CREATE POLICY "Designers can insert their own quotes"
   );
 
 -- UPDATE: designers can update their own quotes
+DROP POLICY IF EXISTS "Designers can update their own quotes" ON designer_quotes;
 CREATE POLICY "Designers can update their own quotes"
   ON designer_quotes
   FOR UPDATE
@@ -64,6 +68,7 @@ CREATE POLICY "Designers can update their own quotes"
   );
 
 -- DELETE: designers can delete their own quotes
+DROP POLICY IF EXISTS "Designers can delete their own quotes" ON designer_quotes;
 CREATE POLICY "Designers can delete their own quotes"
   ON designer_quotes
   FOR DELETE
@@ -77,6 +82,7 @@ CREATE POLICY "Designers can delete their own quotes"
   );
 
 -- Restore missing UPDATE and DELETE policies on quote_items for designers
+DROP POLICY IF EXISTS "Designers can update their own quote items" ON quote_items;
 CREATE POLICY "Designers can update their own quote items"
   ON quote_items
   FOR UPDATE
@@ -98,6 +104,7 @@ CREATE POLICY "Designers can update their own quote items"
     )
   );
 
+DROP POLICY IF EXISTS "Designers can delete their own quote items" ON quote_items;
 CREATE POLICY "Designers can delete their own quote items"
   ON quote_items
   FOR DELETE

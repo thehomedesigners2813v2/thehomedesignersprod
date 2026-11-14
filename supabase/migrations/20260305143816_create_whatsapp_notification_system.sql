@@ -48,6 +48,7 @@ ALTER TABLE whatsapp_settings ENABLE ROW LEVEL SECURITY;
 -- Only one settings record should exist
 CREATE UNIQUE INDEX IF NOT EXISTS whatsapp_settings_singleton ON whatsapp_settings ((true));
 
+DROP POLICY IF EXISTS "Admins can read WhatsApp settings" ON whatsapp_settings;
 CREATE POLICY "Admins can read WhatsApp settings"
   ON whatsapp_settings FOR SELECT
   TO authenticated
@@ -59,6 +60,7 @@ CREATE POLICY "Admins can read WhatsApp settings"
     )
   );
 
+DROP POLICY IF EXISTS "Admins can insert WhatsApp settings" ON whatsapp_settings;
 CREATE POLICY "Admins can insert WhatsApp settings"
   ON whatsapp_settings FOR INSERT
   TO authenticated
@@ -70,6 +72,7 @@ CREATE POLICY "Admins can insert WhatsApp settings"
     )
   );
 
+DROP POLICY IF EXISTS "Admins can update WhatsApp settings" ON whatsapp_settings;
 CREATE POLICY "Admins can update WhatsApp settings"
   ON whatsapp_settings FOR UPDATE
   TO authenticated
@@ -107,17 +110,20 @@ CREATE TABLE IF NOT EXISTS customer_notification_preferences (
 
 ALTER TABLE customer_notification_preferences ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Customers can view own notification preferences" ON customer_notification_preferences;
 CREATE POLICY "Customers can view own notification preferences"
   ON customer_notification_preferences FOR SELECT
   TO authenticated
   USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Customers can update own notification preferences" ON customer_notification_preferences;
 CREATE POLICY "Customers can update own notification preferences"
   ON customer_notification_preferences FOR UPDATE
   TO authenticated
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "System can insert notification preferences" ON customer_notification_preferences;
 CREATE POLICY "System can insert notification preferences"
   ON customer_notification_preferences FOR INSERT
   TO authenticated
@@ -150,6 +156,7 @@ CREATE INDEX IF NOT EXISTS idx_whatsapp_logs_customer ON whatsapp_notification_l
 CREATE INDEX IF NOT EXISTS idx_whatsapp_logs_status ON whatsapp_notification_logs(status);
 CREATE INDEX IF NOT EXISTS idx_whatsapp_logs_created ON whatsapp_notification_logs(created_at DESC);
 
+DROP POLICY IF EXISTS "Admins can view all notification logs" ON whatsapp_notification_logs;
 CREATE POLICY "Admins can view all notification logs"
   ON whatsapp_notification_logs FOR SELECT
   TO authenticated
@@ -161,11 +168,13 @@ CREATE POLICY "Admins can view all notification logs"
     )
   );
 
+DROP POLICY IF EXISTS "Customers can view own notification logs" ON whatsapp_notification_logs;
 CREATE POLICY "Customers can view own notification logs"
   ON whatsapp_notification_logs FOR SELECT
   TO authenticated
   USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Designers can view logs for assigned projects" ON whatsapp_notification_logs;
 CREATE POLICY "Designers can view logs for assigned projects"
   ON whatsapp_notification_logs FOR SELECT
   TO authenticated
@@ -178,11 +187,13 @@ CREATE POLICY "Designers can view logs for assigned projects"
     )
   );
 
+DROP POLICY IF EXISTS "System can insert notification logs" ON whatsapp_notification_logs;
 CREATE POLICY "System can insert notification logs"
   ON whatsapp_notification_logs FOR INSERT
   TO authenticated
   WITH CHECK (true);
 
+DROP POLICY IF EXISTS "System can update notification logs" ON whatsapp_notification_logs;
 CREATE POLICY "System can update notification logs"
   ON whatsapp_notification_logs FOR UPDATE
   TO authenticated

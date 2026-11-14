@@ -18,6 +18,7 @@
 */
 
 -- Helper function to check if current user is the assigned designer for a customer project
+DROP FUNCTION IF EXISTS is_assigned_designer(uuid);
 CREATE OR REPLACE FUNCTION is_assigned_designer(customer_id uuid)
 RETURNS boolean
 LANGUAGE plpgsql
@@ -49,6 +50,7 @@ $$;
 GRANT EXECUTE ON FUNCTION is_assigned_designer(uuid) TO authenticated;
 
 -- Helper function to check if current user has a project share
+DROP FUNCTION IF EXISTS has_project_share_access(uuid);
 CREATE OR REPLACE FUNCTION has_project_share_access(customer_id uuid)
 RETURNS boolean
 LANGUAGE plpgsql

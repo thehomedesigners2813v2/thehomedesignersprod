@@ -13,8 +13,8 @@ const RegistrationSuccessModal: React.FC<RegistrationSuccessModalProps> = ({ isO
   const isDesigner = userType === 'designer';
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-white rounded-2xl max-w-md w-full p-8 text-center shadow-2xl animate-scale-in">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-black/50 p-4 animate-fade-in">
+      <div className="relative my-auto w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-2xl animate-scale-in">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -39,7 +39,7 @@ const RegistrationSuccessModal: React.FC<RegistrationSuccessModalProps> = ({ isO
         <p className="text-gray-600 mb-6 leading-relaxed">
           {isDesigner
             ? "Your designer profile has been submitted and is pending admin approval. Once verified, you'll be able to log in and start connecting with clients."
-            : "Your account has been created. You can now log in to register your interior design project and connect with expert designers."}
+            : 'Your account has been created. Confirm your email before signing in. After that, you can register your project and connect with designers.'}
         </p>
 
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 text-left">

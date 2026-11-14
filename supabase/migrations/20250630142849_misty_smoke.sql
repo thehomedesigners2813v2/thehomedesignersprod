@@ -40,7 +40,8 @@ BEGIN
     WHERE tablename = 'project_team_members' 
     AND policyname = 'Designers can manage team members for their projects'
   ) THEN
-    CREATE POLICY "Designers can manage team members for their projects"
+    DROP POLICY IF EXISTS "Designers can manage team members for their projects" ON project_team_members;
+CREATE POLICY "Designers can manage team members for their projects"
       ON project_team_members
       FOR ALL
       TO authenticated
@@ -70,7 +71,8 @@ BEGIN
     WHERE tablename = 'project_team_members' 
     AND policyname = 'Customers can view team members for their projects'
   ) THEN
-    CREATE POLICY "Customers can view team members for their projects"
+    DROP POLICY IF EXISTS "Customers can view team members for their projects" ON project_team_members;
+CREATE POLICY "Customers can view team members for their projects"
       ON project_team_members
       FOR SELECT
       TO authenticated

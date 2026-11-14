@@ -36,11 +36,13 @@ CREATE TABLE IF NOT EXISTS site_settings (
 
 ALTER TABLE site_settings ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Anyone can view active site settings" ON site_settings;
 CREATE POLICY "Anyone can view active site settings"
   ON site_settings
   FOR SELECT
   USING (is_active = true);
 
+DROP POLICY IF EXISTS "Admin users can update site settings" ON site_settings;
 CREATE POLICY "Admin users can update site settings"
   ON site_settings
   FOR UPDATE
@@ -60,6 +62,7 @@ CREATE POLICY "Admin users can update site settings"
     )
   );
 
+DROP POLICY IF EXISTS "Admin users can insert site settings" ON site_settings;
 CREATE POLICY "Admin users can insert site settings"
   ON site_settings
   FOR INSERT

@@ -30,6 +30,13 @@ CREATE TABLE IF NOT EXISTS vastu_analyses (
   UNIQUE(design_hash)
 );
 
+-- The table already exists from an earlier migration, so CREATE TABLE IF NOT EXISTS
+-- does not add design_hash. Add it before the index below.
+ALTER TABLE vastu_analyses ADD COLUMN IF NOT EXISTS design_hash text;
+UPDATE vastu_analyses SET design_hash = md5(id::text) WHERE design_hash IS NULL;
+ALTER TABLE vastu_analyses ALTER COLUMN design_hash SET NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS vastu_analyses_design_hash_key ON vastu_analyses (design_hash);
+
 -- Create vastu recommendations table
 CREATE TABLE IF NOT EXISTS vastu_recommendations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -47,6 +54,7 @@ ALTER TABLE vastu_analyses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vastu_recommendations ENABLE ROW LEVEL SECURITY;
 
 -- Policies for vastu_analyses
+DROP POLICY IF EXISTS "Customers can view their own vastu analyses" ON vastu_analyses;
 CREATE POLICY "Customers can view their own vastu analyses"
   ON vastu_analyses
   FOR SELECT
@@ -59,6 +67,7 @@ CREATE POLICY "Customers can view their own vastu analyses"
     )
   );
 
+DROP POLICY IF EXISTS "Designers can view vastu analyses for assigned projects" ON vastu_analyses;
 CREATE POLICY "Designers can view vastu analyses for assigned projects"
   ON vastu_analyses
   FOR SELECT
@@ -73,6 +82,7 @@ CREATE POLICY "Designers can view vastu analyses for assigned projects"
     )
   );
 
+DROP POLICY IF EXISTS "System can insert vastu analyses" ON vastu_analyses;
 CREATE POLICY "System can insert vastu analyses"
   ON vastu_analyses
   FOR INSERT
@@ -80,6 +90,7 @@ CREATE POLICY "System can insert vastu analyses"
   WITH CHECK (true);
 
 -- Policies for vastu_recommendations
+DROP POLICY IF EXISTS "Customers can view their own vastu recommendations" ON vastu_recommendations;
 CREATE POLICY "Customers can view their own vastu recommendations"
   ON vastu_recommendations
   FOR SELECT
@@ -93,6 +104,7 @@ CREATE POLICY "Customers can view their own vastu recommendations"
     )
   );
 
+DROP POLICY IF EXISTS "Designers can view vastu recommendations for assigned projects" ON vastu_recommendations;
 CREATE POLICY "Designers can view vastu recommendations for assigned projects"
   ON vastu_recommendations
   FOR SELECT
@@ -108,6 +120,7 @@ CREATE POLICY "Designers can view vastu recommendations for assigned projects"
     )
   );
 
+DROP POLICY IF EXISTS "System can insert vastu recommendations" ON vastu_recommendations;
 CREATE POLICY "System can insert vastu recommendations"
   ON vastu_recommendations
   FOR INSERT
@@ -123,6 +136,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS update_vastu_analyses_updated_at ON vastu_analyses;
 CREATE TRIGGER update_vastu_analyses_updated_at
   BEFORE UPDATE ON vastu_analyses
   FOR EACH ROW

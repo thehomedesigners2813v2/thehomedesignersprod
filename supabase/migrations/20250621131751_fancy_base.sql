@@ -56,12 +56,14 @@ ALTER TABLE review_responses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE review_votes ENABLE ROW LEVEL SECURITY;
 
 -- Policies for reviews
+DROP POLICY IF EXISTS "Anyone can read reviews" ON reviews;
 CREATE POLICY "Anyone can read reviews"
   ON reviews
   FOR SELECT
   TO anon, authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "Customers can create reviews for their projects" ON reviews;
 CREATE POLICY "Customers can create reviews for their projects"
   ON reviews
   FOR INSERT
@@ -75,6 +77,7 @@ CREATE POLICY "Customers can create reviews for their projects"
     )
   );
 
+DROP POLICY IF EXISTS "Customers can update own reviews" ON reviews;
 CREATE POLICY "Customers can update own reviews"
   ON reviews
   FOR UPDATE
@@ -82,12 +85,14 @@ CREATE POLICY "Customers can update own reviews"
   USING (auth.uid() = customer_id);
 
 -- Policies for review responses
+DROP POLICY IF EXISTS "Anyone can read review responses" ON review_responses;
 CREATE POLICY "Anyone can read review responses"
   ON review_responses
   FOR SELECT
   TO anon, authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "Designers can respond to their reviews" ON review_responses;
 CREATE POLICY "Designers can respond to their reviews"
   ON review_responses
   FOR INSERT
@@ -105,6 +110,7 @@ CREATE POLICY "Designers can respond to their reviews"
     )
   );
 
+DROP POLICY IF EXISTS "Designers can update own responses" ON review_responses;
 CREATE POLICY "Designers can update own responses"
   ON review_responses
   FOR UPDATE
@@ -118,18 +124,21 @@ CREATE POLICY "Designers can update own responses"
   );
 
 -- Policies for review votes
+DROP POLICY IF EXISTS "Anyone can read review votes" ON review_votes;
 CREATE POLICY "Anyone can read review votes"
   ON review_votes
   FOR SELECT
   TO anon, authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "Users can vote on reviews" ON review_votes;
 CREATE POLICY "Users can vote on reviews"
   ON review_votes
   FOR INSERT
   TO authenticated
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own votes" ON review_votes;
 CREATE POLICY "Users can update own votes"
   ON review_votes
   FOR UPDATE
@@ -137,11 +146,13 @@ CREATE POLICY "Users can update own votes"
   USING (auth.uid() = user_id);
 
 -- Triggers for updated_at
+DROP TRIGGER IF EXISTS update_reviews_updated_at ON reviews;
 CREATE TRIGGER update_reviews_updated_at
   BEFORE UPDATE ON reviews
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_review_responses_updated_at ON review_responses;
 CREATE TRIGGER update_review_responses_updated_at
   BEFORE UPDATE ON review_responses
   FOR EACH ROW
@@ -171,6 +182,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Trigger to update designer rating
+DROP TRIGGER IF EXISTS update_designer_rating_trigger ON reviews;
 CREATE TRIGGER update_designer_rating_trigger
   AFTER INSERT OR UPDATE OR DELETE ON reviews
   FOR EACH ROW
@@ -195,6 +207,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Trigger to update helpful votes
+DROP TRIGGER IF EXISTS update_review_helpful_votes_trigger ON review_votes;
 CREATE TRIGGER update_review_helpful_votes_trigger
   AFTER INSERT OR UPDATE OR DELETE ON review_votes
   FOR EACH ROW

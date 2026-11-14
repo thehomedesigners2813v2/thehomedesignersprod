@@ -147,16 +147,17 @@ const DesignerCommunityPanel: React.FC = () => {
                   </select>
                 </label>
                 <button
+                  type="button"
                   onClick={() => toggleListing(project)}
                   disabled={busyId === project.customer_id}
                   className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-60 ${
                     project.is_open
-                      ? 'bg-green-600 text-white hover:bg-green-700'
+                      ? 'border border-gray-300 bg-white text-gray-800 hover:bg-gray-50'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
                   {busyId === project.customer_id && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {project.is_open ? 'Open to join' : 'Share to community'}
+                  {project.is_open ? 'Unshare' : 'Share to community'}
                 </button>
               </div>
             </div>

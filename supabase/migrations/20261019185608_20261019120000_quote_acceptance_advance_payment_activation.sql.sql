@@ -851,7 +851,8 @@ BEGIN
     SELECT 1 FROM pg_policy
     WHERE polrelid = 'public.notifications'::regclass AND polname = 'Users can read own notifications'
   ) THEN
-    CREATE POLICY "Users can read own notifications"
+    DROP POLICY IF EXISTS "Users can read own notifications" ON public.notifications;
+CREATE POLICY "Users can read own notifications"
       ON public.notifications FOR SELECT
       TO authenticated
       USING (user_id = auth.uid());
@@ -860,7 +861,8 @@ BEGIN
     SELECT 1 FROM pg_policy
     WHERE polrelid = 'public.notifications'::regclass AND polname = 'Users can update own notifications'
   ) THEN
-    CREATE POLICY "Users can update own notifications"
+    DROP POLICY IF EXISTS "Users can update own notifications" ON public.notifications;
+CREATE POLICY "Users can update own notifications"
       ON public.notifications FOR UPDATE
       TO authenticated
       USING (user_id = auth.uid())
@@ -870,7 +872,8 @@ BEGIN
     SELECT 1 FROM pg_policy
     WHERE polrelid = 'public.notifications'::regclass AND polname = 'Users can delete own notifications'
   ) THEN
-    CREATE POLICY "Users can delete own notifications"
+    DROP POLICY IF EXISTS "Users can delete own notifications" ON public.notifications;
+CREATE POLICY "Users can delete own notifications"
       ON public.notifications FOR DELETE
       TO authenticated
       USING (user_id = auth.uid());
