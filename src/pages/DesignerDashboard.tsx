@@ -560,8 +560,8 @@ const DesignerDashboard = () => {
       const status = subscriptionData?.status || null;
       setDesignerSubscription({ status });
 
-      // STEP 3: Enforce expiration only while the Admin switch is ON.
-      setShowSubscriptionExpiredModal(enabled && status === 'expired');
+      // A designer can sign in, but designer tools stay closed until a paid monthly plan is active.
+      setShowSubscriptionExpiredModal(enabled && status !== 'active');
     } catch (error) {
       console.error('Error fetching subscription management state:', error);
 
@@ -1231,10 +1231,10 @@ const DesignerDashboard = () => {
           IMPORTANT:
           This can only appear when BOTH conditions are true:
           1. Admin enabled Subscription Management.
-          2. This designer's subscription status is expired.
+          2. This designer does not have an active paid monthly plan.
         */}
         {subscriptionManagementEnabled &&
-          designerSubscription?.status === 'expired' &&
+          designerSubscription?.status !== 'active' &&
           showSubscriptionExpiredModal && (
             <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
               <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 text-center">
@@ -1243,26 +1243,19 @@ const DesignerDashboard = () => {
                 </div>
 
                 <h2 className="text-2xl font-bold text-secondary-800 mb-2">
-                  Subscription Expired
+                  Monthly subscription required
                 </h2>
 
                 <p className="text-gray-600 mb-6">
-                  Your subscription has expired. Please renew your subscription
-                  to continue using the available features and tools.
+                  Designer tools stay closed until a monthly plan is paid.
+                  Choose a plan to continue.
                 </p>
 
                 <button
                   onClick={() => navigate('/designer-subscription')}
                   className="w-full bg-red-600 text-white px-4 py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors"
                 >
-                  Renew Now
-                </button>
-
-                <button
-                  onClick={() => setShowSubscriptionExpiredModal(false)}
-                  className="mt-3 text-sm text-gray-500 hover:text-gray-700"
-                >
-                  Close
+                  Choose a plan
                 </button>
               </div>
             </div>

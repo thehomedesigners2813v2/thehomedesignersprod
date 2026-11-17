@@ -73,13 +73,6 @@ const DesignerSubscription = () => {
 
   useEffect(() => { void loadSubscriptionData(); }, [loadSubscriptionData]);
 
-  const getRemainingTrialDays = () => {
-    if (!subscription || subscription.status !== 'trial') return 0;
-    const endDate = new Date(subscription.trial_end_date);
-    const diffDays = Math.ceil((endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-    return Math.max(0, diffDays);
-  };
-
   const getRemainingSubscriptionDays = () => {
     if (!subscription || !subscription.subscription_end_date) return 0;
     const endDate = new Date(subscription.subscription_end_date);
@@ -94,7 +87,7 @@ const DesignerSubscription = () => {
 
   const getStatusBadge = (status: string) => {
     const badges: Record<string, { text: string; color: string }> = {
-      trial: { text: 'Free Trial', color: 'bg-blue-100 text-blue-800' },
+      trial: { text: 'Payment required', color: 'bg-amber-100 text-amber-800' },
       active: { text: 'Active', color: 'bg-emerald-100 text-emerald-800' },
       expired: { text: 'Expired', color: 'bg-red-100 text-red-800' },
       cancelled: { text: 'Cancelled', color: 'bg-slate-100 text-slate-800' },
@@ -124,10 +117,10 @@ const DesignerSubscription = () => {
               </div>
               <div className="flex items-center gap-4">
                 {getStatusBadge(subscription.status)}
-                {subscription.status === 'trial' && (
+                {subscription.status !== 'active' && (
                   <div className="text-right">
-                    <p className="text-sm text-slate-500">Trial ends in</p>
-                    <p className="text-2xl font-bold text-blue-600">{getRemainingTrialDays()} days</p>
+                    <p className="text-sm text-slate-500">Monthly plan</p>
+                    <p className="text-sm font-semibold text-amber-700">Payment required</p>
                   </div>
                 )}
                 {subscription.status === 'active' && (

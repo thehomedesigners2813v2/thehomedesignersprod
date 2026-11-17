@@ -37,12 +37,12 @@ const SubscriptionExpiredModal: React.FC<
           </div>
 
           <h2 className="text-2xl font-bold text-gray-900 mb-3">
-            Subscription Expired
+            Monthly subscription required
           </h2>
 
           <p className="text-gray-600 leading-relaxed mb-7">
-            Your subscription has expired. Please renew your subscription
-            to continue using the available features and tools.
+            Designer tools stay closed until a monthly plan is paid.
+            Choose a plan to continue.
           </p>
 
           <button
@@ -50,7 +50,7 @@ const SubscriptionExpiredModal: React.FC<
             onClick={handleRenew}
             className="w-full bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors"
           >
-            Renew Now
+            Choose a plan
           </button>
         </div>
       </div>

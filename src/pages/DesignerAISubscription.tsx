@@ -102,7 +102,7 @@ const DesignerAISubscription = () => {
 
   useEffect(() => { void loadData(); }, [loadData]);
 
-  const standardActive = standardSub?.status === 'active' || standardSub?.status === 'trial';
+  const standardActive = standardSub?.status === 'active';
   const aiActive = aiSubscription?.status === 'active' || aiSubscription?.status === 'trial';
   const remainingCredits = creditPeriod
     ? creditPeriod.credits_granted - creditPeriod.credits_reserved - creditPeriod.credits_consumed + creditPeriod.credits_refunded

@@ -121,24 +121,10 @@ export const useSubscription = () => {
       // TRIAL SUBSCRIPTION
       // --------------------------------
       if (subData.status === 'trial') {
-        if (subData.trial_end_date) {
-          const trialEnd = new Date(subData.trial_end_date);
-
-          const diffTime =
-            trialEnd.getTime() - now.getTime();
-
-          daysRemaining = Math.ceil(
-            diffTime / (1000 * 60 * 60 * 24)
-          );
-
-          isTrial = daysRemaining > 0;
-          isActive = daysRemaining > 0;
-          isExpired = daysRemaining <= 0;
-        } else {
-          isTrial = false;
-          isActive = false;
-          isExpired = true;
-        }
+        isTrial = false;
+        isActive = false;
+        isExpired = true;
+        daysRemaining = 0;
       }
 
       // --------------------------------
