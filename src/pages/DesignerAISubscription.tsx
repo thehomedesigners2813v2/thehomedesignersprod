@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Check, Sparkles, Zap, Crown, AlertCircle, Loader2, TrendingUp } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
+import { usePlanAccess } from '../hooks/usePlanAccess';
 import PaymentOptionsModal from '../components/payments/PaymentOptionsModal';
 
 interface AIPlan {
@@ -48,6 +49,7 @@ const planIcons: Record<string, typeof Sparkles> = { 'AI Starter': Sparkles, 'AI
 const DesignerAISubscription = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isProfessional, loading: planLoading } = usePlanAccess();
   const [loading, setLoading] = useState(true);
   const [plans, setPlans] = useState<AIPlan[]>([]);
   const [aiSubscription, setAISubscription] = useState<AISubscription | null>(null);
@@ -59,7 +61,6 @@ const DesignerAISubscription = () => {
 
   const loadData = useCallback(async () => {
     if (!user) { setLoading(false); return; }
-    setLoading(true);
     setError(null);
     try {
       const { data: designer, error: designerError } = await supabase
@@ -114,7 +115,8 @@ const DesignerAISubscription = () => {
     setShowPaymentModal(true);
   };
 
-  if (loading) return <div className="flex min-h-screen items-center justify-center bg-slate-50"><Loader2 className="h-10 w-10 animate-spin text-primary-600" /></div>;
+  if (loading || planLoading) return <div className="flex min-h-screen items-center justify-center bg-slate-50"><Loader2 className="h-10 w-10 animate-spin text-primary-600" /></div>;
+  if (!isProfessional) return <div className="flex min-h-screen items-center justify-center bg-slate-50 px-6"><div className="max-w-md text-center"><h1 className="text-2xl font-bold text-slate-900">AI add-on</h1><p className="mt-2 text-slate-600">The AI add-on is available on the Professional plan.</p><button type="button" onClick={() => navigate('/designer-subscription')} className="mt-5 rounded-lg bg-primary-600 px-4 py-2 font-semibold text-white">View plans</button></div></div>;
 
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">

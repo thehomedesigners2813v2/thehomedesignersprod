@@ -269,9 +269,9 @@ export default function PaymentOptionsModal({
       <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-100">
         <Clock className="h-7 w-7 text-amber-600" />
       </div>
-      <h3 className="mt-4 text-lg font-bold text-slate-900">Payment submitted</h3>
+      <h3 className="mt-4 text-lg font-bold text-slate-900">Waiting for admin confirmation</h3>
       <p className="mt-2 max-w-sm text-sm text-slate-600">
-        We will confirm your UPI payment shortly. Your order activates once our team approves it.
+        Your UPI payment and screenshot were submitted. Please wait until an admin confirms the payment. You do not need to pay again.
       </p>
       <button
         type="button"

@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, Home as HomeIcon, User, LogOut, Palette, UserPlus, CreditCard as Edit, Loader2, FolderOpen, Users, BarChart3, FileText, Shield, Wallpaper } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useDesignerProfile } from '../hooks/useDesignerProfile';
+import { usePlanAccess } from '../hooks/usePlanAccess';
 import { useUserRegistrationStatus } from '../hooks/useUserRegistrationStatus';
 import AuthModal from './AuthModal';
 import NotificationBell from './NotificationBell';
@@ -20,6 +21,7 @@ const Header = () => {
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
   const { designer, isDesigner } = useDesignerProfile();
+  const { isProfessional } = usePlanAccess();
   const { hasCustomerProject } = useUserRegistrationStatus();
   useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
@@ -45,7 +47,7 @@ const Header = () => {
     { name: 'Offers & Deals', href: '/deals' },
     { name: 'Materials', href: '/materials' },
     { name: '3D Wallpaper', href: '/3d-wallpaper' },
-  ];
+  ].filter((item) => item.href !== '/deals' || !isDesigner || isProfessional);
 
   const isActive = (path: string) => location.pathname === path;
 

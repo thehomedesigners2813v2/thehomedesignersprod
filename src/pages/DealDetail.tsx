@@ -2,11 +2,15 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, CalendarDays, CheckCircle2, Gift, MapPin, UserRound } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useDesignerProfile } from '../hooks/useDesignerProfile';
+import { usePlanAccess } from '../hooks/usePlanAccess';
 
 type Deal = { id: string; title: string; description: string; discount_percentage: number; original_price: number; deal_price: number; deal_type: string; services_included: string[]; terms_conditions: string | null; valid_from: string; valid_until: string; image_url?: string | null; designers?: { id: string; name: string; specialization?: string; location?: string; profile_image?: string | null } | null };
 
 export default function DealDetail() {
   const { id } = useParams();
+  const { isDesigner } = useDesignerProfile();
+  const { isProfessional, loading: planLoading } = usePlanAccess();
   const [deal, setDeal] = useState<Deal | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -23,6 +27,7 @@ export default function DealDetail() {
     void fetchDeal();
   }, [id]);
 
+  if (isDesigner && !planLoading && !isProfessional) return <div className="flex min-h-screen items-center justify-center bg-[#fcfaf7] px-6"><div className="max-w-md text-center"><h1 className="text-2xl font-semibold text-secondary-800">Offers & Deals</h1><p className="mt-2 text-stone-600">Offers and deals are available on the Professional plan.</p><Link to="/designer-subscription" className="btn-primary mt-5 inline-flex">View plans</Link></div></div>;
   if (loading) return <div className="flex min-h-screen items-center justify-center bg-[#fcfaf7]"><div className="h-12 w-12 animate-spin rounded-full border-4 border-primary-100 border-t-primary-600" /></div>;
   if (notFound || !deal) return <div className="flex min-h-screen items-center justify-center bg-[#fcfaf7] px-4"><div className="text-center"><Gift className="mx-auto h-14 w-14 text-primary-400" aria-hidden="true" /><h1 className="mt-5 text-2xl font-semibold text-secondary-800">This offer is no longer available</h1><p className="mt-2 text-stone-600">Browse the latest offers from our marketplace.</p><Link to="/deals" className="btn-primary mt-6 inline-flex">View Offers</Link></div></div>;
 

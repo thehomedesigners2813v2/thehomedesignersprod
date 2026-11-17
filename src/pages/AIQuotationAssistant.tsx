@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, ArrowLeft, Check, ChevronLeft, ChevronRight, FileImage, FileText, Loader2, Mic, Pencil, Plus, RefreshCw, Sparkles, Trash2, Upload, X } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useDesignerProfile } from '../hooks/useDesignerProfile';
+import { usePlanAccess } from '../hooks/usePlanAccess';
 import { useVoiceInput } from '../hooks/useVoiceInput';
 import { supabase } from '../lib/supabase';
 import { generateBillPdf } from '../utils/generateBillPdf';
@@ -42,6 +43,7 @@ const AIQuotationAssistant = () => {
   const navigate = useNavigate();
   const { id: projectId } = useParams();
   const { designer, loading: designerLoading } = useDesignerProfile();
+  const { isProfessional, loading: planLoading } = usePlanAccess();
   const voice = useVoiceInput();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [stage, setStage] = useState<Stage>(1);
@@ -171,7 +173,8 @@ const AIQuotationAssistant = () => {
     generateBillPdf({ billNumber: `AI-${job?.id.slice(-8) || 'DRAFT'}`, status: 'draft', createdAt: new Date().toISOString(), projectName: customer.project_name, customerName: customer.name, customerEmail: customer.email, customerPhone: customer.phone, customerLocation: customer.location || '', designerName: designer.name, designerSpecialization: designer.specialization, items: items.map(item => ({ item_type: item.item_type, name: item.name, description: item.description, number_of_units: item.number_of_units, quantity: item.quantity, unit: item.unit, unit_price: item.unit_price, amount: itemAmount(item), width: item.width || undefined, height: item.height || undefined, depth: item.depth || undefined })), subtotal, discountAmount: discount, taxRate, taxAmount, totalAmount: total, notes: (job?.assumptions || []).join('\n') });
   };
 
-  if (designerLoading) return <div className="flex min-h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary-600" /></div>;
+  if (designerLoading || planLoading) return <div className="flex min-h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary-600" /></div>;
+  if (!isProfessional) return <div className="flex min-h-screen items-center justify-center bg-slate-50 px-6"><div className="max-w-md text-center"><h1 className="text-2xl font-bold text-slate-900">Professional plan required</h1><p className="mt-2 text-slate-600">AI quotations are available on the Professional plan.</p><button type="button" onClick={() => navigate('/designer-subscription')} className="mt-5 rounded-lg bg-primary-600 px-4 py-2 font-semibold text-white">View plans</button></div></div>;
   if (!designer || !customer || !projectId) return <div className="mx-auto max-w-xl px-6 py-24 text-center"><AlertCircle className="mx-auto h-12 w-12 text-red-500" /><h1 className="mt-4 text-2xl font-bold text-slate-900">AI quotation unavailable</h1><p className="mt-2 text-slate-600">Open this assistant from an assigned designer project.</p></div>;
 
   return <div className="min-h-screen bg-slate-50 pb-10 text-slate-900">

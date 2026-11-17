@@ -6,6 +6,7 @@ import {
   setCommunityListing,
 } from '../../lib/communityApi';
 import type { DesignerCommunityOverview, DesignerJoinRequest, DesignerCommunityProject } from '../../lib/communityApi';
+import { usePlanAccess } from '../../hooks/usePlanAccess';
 
 const requestStatusStyles: Record<DesignerJoinRequest['status'], { label: string; className: string }> = {
   pending: { label: 'Awaiting your decision', className: 'bg-amber-50 text-amber-800' },
@@ -15,6 +16,7 @@ const requestStatusStyles: Record<DesignerJoinRequest['status'], { label: string
 };
 
 const DesignerCommunityPanel: React.FC = () => {
+  const { isProfessional, loading: planLoading } = usePlanAccess();
   const [overview, setOverview] = useState<DesignerCommunityOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -66,6 +68,10 @@ const DesignerCommunityPanel: React.FC = () => {
 
   const reject = (request: DesignerJoinRequest) =>
     runAction(request.id, () => decideCommunityJoinRequest(request.id, 'reject', rejectReason.trim() || undefined));
+
+  if (planLoading || !isProfessional) {
+    return null;
+  }
 
   if (loading) {
     return (

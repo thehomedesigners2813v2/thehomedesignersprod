@@ -47,6 +47,7 @@ import { useDesignerProfile } from '../hooks/useDesignerProfile';
 import { supabase } from '../lib/supabase';
 import SubscriptionBanner from '../components/SubscriptionBanner';
 import DesignerCommunityPanel from '../components/community/DesignerCommunityPanel';
+import { usePlanAccess } from '../hooks/usePlanAccess';
 
 interface DashboardStats {
   totalProjects: number;
@@ -439,6 +440,7 @@ const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
 
 const DesignerDashboard = () => {
   const navigate = useNavigate();
+  const { isProfessional } = usePlanAccess();
   const { user } = useAuth();
   const { designer, isDesigner, loading: designerLoading } = useDesignerProfile();
   const [stats, setStats] = useState<DashboardStats>({
@@ -942,7 +944,7 @@ const DesignerDashboard = () => {
                   Manage Subscription
                 </button>
               )}
-              {subscriptionManagementEnabled && !subscriptionManagementLoading && (
+              {isProfessional && subscriptionManagementEnabled && !subscriptionManagementLoading && (
                 <button
                   onClick={() => navigate('/designer-ai-subscription')}
                   className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
@@ -1194,6 +1196,7 @@ const DesignerDashboard = () => {
                   <Receipt className="w-5 h-5 text-primary-600" />
                   <span className="font-medium text-gray-700">Bills Dashboard</span>
                 </button>
+                {isProfessional && (
                 <button
                   onClick={() => navigate('/designer-ai-subscription')}
                   className="w-full text-left p-3 hover:bg-gray-50 rounded-lg transition-colors flex items-center space-x-3"
@@ -1201,6 +1204,7 @@ const DesignerDashboard = () => {
                   <Sparkles className="w-5 h-5 text-primary-600" />
                   <span className="font-medium text-gray-700">AI Quotation Plans</span>
                 </button>
+                )}
               </div>
 
             </div>

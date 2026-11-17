@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Check, Sparkles, Zap, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
+import { usePlanAccess } from '../hooks/usePlanAccess';
 import PaymentOptionsModal from '../components/payments/PaymentOptionsModal';
 
 interface SubscriptionPlan {
@@ -34,15 +35,16 @@ const formatCurrency = (amount: number) => new Intl.NumberFormat('en-IN', { styl
 const DesignerSubscription = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isProfessional } = usePlanAccess();
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState<DesignerSubscriptionRow | null>(null);
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
+  const [pendingPlanIds, setPendingPlanIds] = useState<string[]>([]);
 
   const loadSubscriptionData = useCallback(async () => {
     if (!user) { setLoading(false); return; }
-    setLoading(true);
     try {
       const { data: designerData, error: designerError } = await supabase
         .from('designers').select('id').eq('user_id', user.id).maybeSingle();
@@ -64,6 +66,14 @@ const DesignerSubscription = () => {
         .order('sort_order');
       if (plansError) throw plansError;
       setPlans((plansData || []) as SubscriptionPlan[]);
+
+      const { data: pendingPayments, error: pendingError } = await supabase
+        .from('payment_orders')
+        .select('reference_id')
+        .eq('purpose', 'designer_subscription')
+        .eq('status', 'awaiting_review');
+      if (pendingError) throw pendingError;
+      setPendingPlanIds((pendingPayments || []).map((row) => row.reference_id));
     } catch (error) {
       console.error('Error loading subscription:', error);
     } finally {
@@ -117,7 +127,7 @@ const DesignerSubscription = () => {
               </div>
               <div className="flex items-center gap-4">
                 {getStatusBadge(subscription.status)}
-                {subscription.status !== 'active' && (
+                {subscription.status !== 'active' && pendingPlanIds.length === 0 && (
                   <div className="text-right">
                     <p className="text-sm text-slate-500">Monthly plan</p>
                     <p className="text-sm font-semibold text-amber-700">Payment required</p>
@@ -134,9 +144,17 @@ const DesignerSubscription = () => {
           </div>
         )}
 
+        {pendingPlanIds.length > 0 && (
+          <div className="mb-8 rounded-2xl border border-amber-300 bg-amber-50 p-5 text-amber-900">
+            <h2 className="font-bold">Waiting for admin confirmation</h2>
+            <p className="mt-1 text-sm">Your UPI payment was submitted. Please wait until an admin confirms it. You do not need to pay again.</p>
+          </div>
+        )}
+
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {plans.map((plan) => {
-            const isCurrentPlan = subscription?.subscription_plan?.id === plan.id;
+            const isCurrentPlan = subscription?.status === 'active' && subscription.subscription_plan?.id === plan.id;
+            const isAwaitingConfirmation = pendingPlanIds.includes(plan.id);
             const Icon = plan.priority_support ? Zap : Sparkles;
             return (
               <div key={plan.id} className={`rounded-2xl border bg-white p-6 shadow-sm transition hover:shadow-md ${isCurrentPlan ? 'border-primary-600 ring-2 ring-primary-100' : 'border-slate-200'}`}>
@@ -161,10 +179,10 @@ const DesignerSubscription = () => {
                 <button
                   type="button"
                   onClick={() => handleUpgrade(plan)}
-                  disabled={isCurrentPlan}
-                  className={`mt-6 w-full rounded-xl py-3 font-semibold transition-colors ${isCurrentPlan ? 'cursor-default bg-slate-100 text-slate-400' : 'bg-primary-600 text-white hover:bg-primary-700'}`}
+                  disabled={isCurrentPlan || isAwaitingConfirmation}
+                  className={`mt-6 w-full rounded-xl py-3 font-semibold transition-colors ${isCurrentPlan || isAwaitingConfirmation ? 'cursor-default bg-slate-100 text-slate-400' : 'bg-primary-600 text-white hover:bg-primary-700'}`}
                 >
-                  {isCurrentPlan ? 'Current Plan' : 'Start Subscription'}
+                  {isAwaitingConfirmation ? 'Waiting for confirmation' : isCurrentPlan ? 'Current Plan' : 'Start Subscription'}
                 </button>
               </div>
             );
@@ -177,7 +195,7 @@ const DesignerSubscription = () => {
           </div>
         )}
 
-        <div className="mt-8 rounded-2xl border border-primary-200 bg-primary-50 p-5">
+        {isProfessional && <div className="mt-8 rounded-2xl border border-primary-200 bg-primary-50 p-5">
           <div className="flex items-start gap-3">
             <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-primary-600" />
             <div>
@@ -188,7 +206,7 @@ const DesignerSubscription = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>}
       </div>
 
       {showPaymentModal && selectedPlan && (

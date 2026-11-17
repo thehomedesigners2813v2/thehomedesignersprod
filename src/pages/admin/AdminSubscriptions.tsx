@@ -278,7 +278,7 @@ const AdminSubscriptions: React.FC = () => {
           <div>
             <h3 className="font-semibold text-gray-900 text-sm mb-4 flex items-center gap-2"><CreditCard className="w-4 h-4 text-sky-600" /> Standard Plans</h3>
             <div className="space-y-4">
-              {plans.map(p => (
+              {plans.filter(p => p.name !== 'Premium').map(p => (
                 <div key={p.id} className="bg-white rounded-xl border border-gray-200 p-5">
                   {editingPlan?.id === p.id ? (
                     <PlanEditor plan={editingPlan} onChange={setEditingPlan} onSave={() => savePlan(editingPlan, 'subscription_plans')} onCancel={() => setEditingPlan(null)} saving={saving} showCredits={false} />

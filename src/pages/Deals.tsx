@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, Search, Tag } from 'lucide-react';
 import DealCard from '../components/DealCard';
 import { supabase } from '../lib/supabase';
+import { useDesignerProfile } from '../hooks/useDesignerProfile';
+import { usePlanAccess } from '../hooks/usePlanAccess';
 
 type Deal = {
   id: string;
@@ -18,6 +20,8 @@ type Deal = {
 };
 
 export default function Deals() {
+  const { isDesigner } = useDesignerProfile();
+  const { isProfessional, loading: planLoading } = usePlanAccess();
   const [deals, setDeals] = useState<Deal[]>([]);
   const [type, setType] = useState('');
   const [search, setSearch] = useState('');
@@ -53,6 +57,10 @@ export default function Deals() {
     return matchesType && (!term || deal.title.toLowerCase().includes(term) || deal.description.toLowerCase().includes(term) || deal.designers?.name.toLowerCase().includes(term));
   }), [deals, search, type]);
   const types = [...new Set(deals.map((deal) => deal.deal_type))].sort();
+
+  if (isDesigner && !planLoading && !isProfessional) {
+    return <div className="flex min-h-screen items-center justify-center bg-[#fcfaf7] px-6"><div className="max-w-md text-center"><h1 className="text-2xl font-bold text-secondary-800">Offers & Deals</h1><p className="mt-2 text-stone-600">Offers and deals are available on the Professional plan.</p><Link to="/designer-subscription" className="btn-primary mt-5 inline-flex">View plans</Link></div></div>;
+  }
 
   return <div className="min-h-screen bg-[#fcfaf7]">
     <section className="border-b border-stone-200 bg-white">
