@@ -46,10 +46,10 @@ export default function Home() {
       setLoading(true);
       setError(false);
       const [designersResult, dealsResult, reviewsResult, designerCount, projectCount, reviewCount] = await Promise.all([
-        supabase.from('designers').select('id, name, specialization, location, profile_image, portfolio_images, rating, total_reviews, total_projects, is_verified, is_active').eq('is_active', true).order('rating', { ascending: false }).order('total_reviews', { ascending: false }).limit(4),
+        supabase.from('designers').select('id, name, specialization, location, profile_image, portfolio_images, rating, total_reviews, total_projects, is_verified, is_active').eq('is_active', true).eq('verification_status', 'verified').order('rating', { ascending: false }).order('total_reviews', { ascending: false }).limit(4),
         supabase.from('designer_deals').select('id, title, description, discount_percentage, original_price, deal_price, deal_type, valid_until, image_url, designers(id, name, profile_image)').eq('is_active', true).lte('valid_from', new Date().toISOString()).gte('valid_until', new Date().toISOString()).order('is_featured', { ascending: false }).order('created_at', { ascending: false }).limit(3),
         supabase.from('reviews').select('id, rating, title, comment, created_at').eq('verified_purchase', true).order('created_at', { ascending: false }).limit(3),
-        supabase.from('designers').select('id', { count: 'exact', head: true }).eq('is_active', true),
+        supabase.from('designers').select('id', { count: 'exact', head: true }).eq('is_active', true).eq('verification_status', 'verified'),
         supabase.from('customers').select('id', { count: 'exact', head: true }).eq('assignment_status', 'completed'),
         supabase.from('reviews').select('id', { count: 'exact', head: true }).eq('verified_purchase', true),
       ]);

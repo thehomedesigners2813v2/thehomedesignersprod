@@ -82,6 +82,7 @@ export default function DesignerDetail() {
         .select(publicColumns)
         .eq('id', id)
         .eq('is_active', true)
+        .eq('verification_status', 'verified')
         .maybeSingle();
       if (!active) return;
       if (designerError || !data) {

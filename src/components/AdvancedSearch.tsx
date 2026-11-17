@@ -67,7 +67,8 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onResults, onLoading })
       const { data: designers, error } = await supabase
         .from('designers')
         .select('location, specialization, services, materials_expertise')
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .eq('verification_status', 'verified');
 
       if (error) throw error;
 
@@ -94,7 +95,8 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onResults, onLoading })
       let query = supabase
         .from('designers')
         .select('id, name, specialization, experience, location, bio, website, starting_price, profile_image, portfolio_images, services, materials_expertise, awards, rating, total_reviews, total_projects, is_verified, is_active')
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .eq('verification_status', 'verified');
 
       // Apply filters
       if (filters.query) {
