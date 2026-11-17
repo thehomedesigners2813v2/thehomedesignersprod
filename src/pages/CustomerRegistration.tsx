@@ -77,8 +77,7 @@ const CustomerRegistration = () => {
   ];
 
   const locations = [
-    'Pune',
-    'Mumbai'
+    'Pune'
   ];
 
   useEffect(() => {

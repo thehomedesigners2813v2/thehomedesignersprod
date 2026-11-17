@@ -86,8 +86,7 @@ const EditProject = () => {
   ];
 
   const locations = [
-    'Pune',
-    'Mumbai'
+    'Pune'
   ];
 
   useEffect(() => {

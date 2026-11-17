@@ -379,6 +379,11 @@ const MyProjects = () => {
                 </div>
 
                 {/* Designer Info */}
+                {(project as any).assigned_designer && !projectHasQuotes[project.id] && (
+                  <div className="px-6 py-3 bg-amber-50 border-b border-amber-100 text-sm text-amber-800">
+                    Waiting for quotation. Your designer will send a quotation for this project.
+                  </div>
+                )}
                 {(project as any).assigned_designer && (
                   <div className="px-6 py-4 bg-green-50 border-b border-gray-100">
                     <div className="flex items-center space-x-3">
