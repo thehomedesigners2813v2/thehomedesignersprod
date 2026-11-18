@@ -146,7 +146,7 @@ const DesignerQuoteGenerator = () => {
       .maybeSingle();
     const periodOpen = period?.period_end ? new Date(period.period_end).getTime() > Date.now() : false;
     const remaining = periodOpen
-      ? Number(period.credits_granted) - Number(period.credits_reserved) - Number(period.credits_consumed) + Number(period.credits_refunded)
+      ? Number(period.credits_granted) - Number(period.credits_consumed)
       : 0;
     if (remaining < 1) {
       setError('You have no AI credits left. Buy an AI credit plan before using Create with AI.');

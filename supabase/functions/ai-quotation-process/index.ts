@@ -34,6 +34,17 @@ async function refund(userClient: ReturnType<typeof createClient>, jobId: string
   await userClient.rpc('refund_ai_credit', { p_job_id: jobId, p_idempotency_key: `refund:${jobId}` })
 }
 
+function readProviderText(providerResult: { output_text?: unknown; output?: Array<{ type?: string; content?: Array<{ type?: string; text?: unknown }> }> }) {
+  if (typeof providerResult.output_text === 'string' && providerResult.output_text.trim()) return providerResult.output_text
+  const parts: string[] = []
+  for (const item of providerResult.output || []) {
+    for (const content of item.content || []) {
+      if (content.type === 'output_text' && typeof content.text === 'string') parts.push(content.text)
+    }
+  }
+  return parts.join('')
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 200, headers: corsHeaders })
 
@@ -130,8 +141,8 @@ Deno.serve(async (req: Request) => {
       throw new Error('PROVIDER_REQUEST_FAILED')
     }
     const providerResult = await openAiResponse.json()
-    const outputText = providerResult.output_text
-    if (typeof outputText !== 'string' || !outputText.trim()) throw new Error('INVALID_PROVIDER_RESULT')
+    const outputText = readProviderText(providerResult)
+    if (!outputText.trim()) throw new Error('INVALID_PROVIDER_RESULT')
     const result = JSON.parse(outputText) as ModelResult
     if (!Array.isArray(result.rooms) || !Array.isArray(result.items) || !Array.isArray(result.assumptions) || !Array.isArray(result.conflicts)) throw new Error('INVALID_PROVIDER_RESULT')
 

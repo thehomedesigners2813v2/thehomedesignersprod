@@ -277,7 +277,7 @@ const AdminAIMonitoring: React.FC = () => {
               </tr></thead>
               <tbody>
                 {creditPeriods.map(p => {
-                  const remaining = (p.credits_granted || 0) - (p.credits_consumed || 0) - (p.credits_reserved || 0) + (p.credits_refunded || 0);
+                  const remaining = (p.credits_granted || 0) - (p.credits_consumed || 0);
                   return (
                     <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50/30">
                       <td className="px-5 py-3"><p className="font-medium text-gray-900">{p.designers?.name || '—'}</p></td>

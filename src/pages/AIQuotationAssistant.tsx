@@ -5,7 +5,7 @@ import { useDesignerProfile } from '../hooks/useDesignerProfile';
 import { usePlanAccess } from '../hooks/usePlanAccess';
 import { useVoiceInput } from '../hooks/useVoiceInput';
 import { supabase } from '../lib/supabase';
-import { generateBillPdf } from '../utils/generateBillPdf';
+import { generateQuotePdf } from '../utils/generateQuotePdf';
 
 type Stage = 1 | 2 | 3 | 4;
 type JobStatus = 'uploaded' | 'requirements_ready' | 'queued' | 'analyzing_plan' | 'understanding_requirements' | 'matching_catalogue' | 'calculating' | 'review_ready' | 'failed' | 'converted';
@@ -169,8 +169,25 @@ const AIQuotationAssistant = () => {
   };
 
   const downloadPdf = () => {
-    if (!customer || !designer) return;
-    generateBillPdf({ billNumber: `AI-${job?.id.slice(-8) || 'DRAFT'}`, status: 'draft', createdAt: new Date().toISOString(), projectName: customer.project_name, customerName: customer.name, customerEmail: customer.email, customerPhone: customer.phone, customerLocation: customer.location || '', designerName: designer.name, designerSpecialization: designer.specialization, items: items.map(item => ({ item_type: item.item_type, name: item.name, description: item.description, number_of_units: item.number_of_units, quantity: item.quantity, unit: item.unit, unit_price: item.unit_price, amount: itemAmount(item), width: item.width || undefined, height: item.height || undefined, depth: item.depth || undefined })), subtotal, discountAmount: discount, taxRate, taxAmount, totalAmount: total, notes: (job?.assumptions || []).join('\n') });
+    if (!customer) return;
+    generateQuotePdf({
+      quoteNumber: `AI-${job?.id.slice(-8) || 'DRAFT'}`,
+      title,
+      projectName: customer.project_name,
+      customerName: customer.name,
+      items: items.map(item => ({
+        roomName: rooms.find(room => room.id === item.room_id)?.name || 'On-Site Work',
+        name: item.name,
+        quantity: item.quantity,
+        unit: item.unit,
+        amount: itemAmount(item),
+      })),
+      subtotal,
+      discountAmount: discount,
+      taxRate,
+      taxAmount,
+      totalAmount: total,
+    });
   };
 
   if (designerLoading || planLoading) return <div className="flex min-h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary-600" /></div>;
