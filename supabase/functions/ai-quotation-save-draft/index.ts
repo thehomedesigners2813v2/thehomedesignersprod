@@ -7,7 +7,7 @@ const corsHeaders = {
 }
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 interface DraftItem { roomName: string; materialId?: string | null; itemType: 'material' | 'labor' | 'service' | 'other' | 'component'; name: string; description?: string; quantity: number; unit: string; numberOfUnits?: number; unitPrice: number; discountPercent?: number; width?: number; height?: number; depth?: number }
-interface SaveRequest { jobId: string; title: string; description?: string; notes?: string; status: 'draft' | 'sent'; taxRate: number; discountAmount: number; items: DraftItem[] }
+interface SaveRequest { jobId: string; title: string; quoteNumber?: string; description?: string; notes?: string; status: 'draft' | 'sent'; taxRate: number; discountAmount: number; items: DraftItem[] }
 const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
 
 Deno.serve(async (req: Request) => {
@@ -51,13 +51,15 @@ Deno.serve(async (req: Request) => {
     const taxable = Math.max(0, subtotal - body.discountAmount)
     const taxAmount = taxable * (body.taxRate / 100)
     const totalAmount = taxable + taxAmount
-    const quoteNumber = `AI-${Date.now().toString().slice(-8)}`
+    const quoteNumber = /^QT-\d{4,12}$/.test(body.quoteNumber || '') ? body.quoteNumber as string : `QT-${Date.now().toString().slice(-6)}`
+    const customerTitle = body.title.replace(/\bAI\b/gi, ' ').replace(/\s+/g, ' ').trim() || 'Interior Quotation'
+    const customerNotes = (body.notes || '').replace(/\bAI\b/gi, ' ').replace(/\s+/g, ' ').trim() || null
 
     const { data: quote, error: quoteError } = await adminClient.from('designer_quotes').insert({
       designer_id: designer.id,
       project_id: job.project_id,
       quote_number: quoteNumber,
-      title: body.title.trim(),
+      title: customerTitle,
       description: body.description?.trim() || null,
       subtotal,
       discount_amount: body.discountAmount,
@@ -65,7 +67,7 @@ Deno.serve(async (req: Request) => {
       tax_amount: taxAmount,
       total_amount: totalAmount,
       status: body.status,
-      notes: body.notes?.trim() || null,
+      notes: customerNotes,
     }).select('id').maybeSingle()
     if (quoteError || !quote) throw new Error('QUOTE_SAVE_FAILED')
 

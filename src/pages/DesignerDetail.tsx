@@ -222,11 +222,11 @@ export default function DesignerDetail() {
             <section className="rounded-3xl bg-white p-6 shadow-sm">
               <h2 className="text-xl font-semibold">Services offered</h2>
               {serviceCards.length === 0 ? <p className="mt-3 text-gray-600">No services listed yet.</p> : (
-                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   {serviceCards.map((item) => (
-                    <article key={item.id} className="overflow-hidden rounded-2xl border border-stone-200">
-                      {item.image && <img src={item.image} alt={item.name} loading="lazy" className="h-36 w-full object-cover" />}
-                      <div className="p-4">
+                    <article key={item.id} className="flex items-center gap-3 rounded-2xl border border-stone-200 p-3">
+                      {item.image && <img src={item.image} alt="" loading="lazy" className="h-14 w-14 shrink-0 rounded-xl object-cover" />}
+                      <div className="min-w-0">
                         <h3 className="font-semibold">{item.name}</h3>
                         <p className="mt-1 text-sm text-gray-600">{item.description}</p>
                       </div>
@@ -241,11 +241,11 @@ export default function DesignerDetail() {
               {Object.keys(materialGroups).length === 0 ? <p className="mt-3 text-gray-600">No materials listed yet.</p> : Object.entries(materialGroups).map(([category, items]) => (
                 <div key={category} className="mt-5">
                   <h3 className="text-sm font-semibold uppercase tracking-wide text-[#D96C4D]">{category}</h3>
-                  <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {items.map((item) => (
-                      <article key={item.id} className="overflow-hidden rounded-2xl border border-stone-200">
-                        {item.image && <img src={item.image} alt={item.name} loading="lazy" className="h-24 w-full object-cover" />}
-                        <p className="p-3 text-sm font-medium">{item.name}</p>
+                      <article key={item.id} className="flex items-center gap-3 rounded-2xl border border-stone-200 p-2.5">
+                        {item.image && <img src={item.image} alt="" loading="lazy" className="h-12 w-12 shrink-0 rounded-lg object-cover" />}
+                        <p className="min-w-0 text-sm font-medium">{item.name}</p>
                       </article>
                     ))}
                   </div>

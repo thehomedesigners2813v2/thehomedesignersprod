@@ -89,7 +89,7 @@ export default function WallpaperOrder() {
   }, [user]);
 
   useEffect(() => {
-    const state = location.state as { selectedWallpaper?: SelectedWallpaper; isCustomOrder?: boolean };
+    const state = location.state as { selectedWallpaper?: SelectedWallpaper; isCustomOrder?: boolean; paperGrade?: 'normal' | 'luxury' | 'golden_foil' };
     if (state?.isCustomOrder) {
       setIsCustomOrder(true);
       setShowForm(true);
@@ -99,6 +99,7 @@ export default function WallpaperOrder() {
 
       setFormData(prev => ({
         ...prev,
+        wallpaper_type: state.paperGrade || prev.wallpaper_type,
         reference_images: [state.selectedWallpaper!.image_url]
       }));
     }
@@ -113,7 +114,7 @@ export default function WallpaperOrder() {
       areaSqFt = areaSqFt / 144;
     }
 
-    const rate = formData.wallpaper_type === 'golden_foil' ? 220 : 160;
+    const rate = formData.wallpaper_type === 'golden_foil' ? 220 : formData.wallpaper_type === 'luxury' ? 190 : 160;
     const total = areaSqFt * rate;
     const advance = total * 0.1;
 
@@ -408,8 +409,9 @@ export default function WallpaperOrder() {
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
             <h3 className="font-semibold text-blue-900 mb-2">Pricing Information</h3>
             <ul className="text-sm text-blue-800 space-y-1">
-              <li>Normal 3D Wallpaper: Rs.160 per sq ft (with installation)</li>
-              <li>Golden/Silver Foil 3D Wallpaper: Rs.220 per sq ft (with installation)</li>
+              <li>Standard paper: Rs.160 per sq ft (with installation)</li>
+              <li>Luxury paper: Rs.190 per sq ft (with installation)</li>
+              <li>Premium paper: Rs.220 per sq ft (with installation)</li>
               <li>10% advance payment required via Razorpay or UPI</li>
               <li>Preview will be provided before final confirmation</li>
               <li>Delivery and execution at site after confirmation</li>
@@ -769,12 +771,38 @@ export default function WallpaperOrder() {
             
                   <div>
                     <div className="font-semibold text-gray-900">
-                      Normal 3D Wallpaper
+                      Standard paper
                     </div>
             
                     <div className="text-sm text-gray-600">
                       Rs.160 per sq ft (with installation)
                     </div>
+                  </div>
+                </label>
+
+                <label
+                  className={`relative flex items-center p-4 border-2 rounded-lg cursor-pointer transition-colors ${
+                    formData.wallpaper_type === 'luxury'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-300 hover:border-gray-400'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="wallpaper_type"
+                    value="luxury"
+                    checked={formData.wallpaper_type === 'luxury'}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        wallpaper_type: e.target.value
+                      })
+                    }
+                    className="mr-3"
+                  />
+                  <div>
+                    <div className="font-semibold text-gray-900">Luxury paper</div>
+                    <div className="text-sm text-gray-600">Rs.190 per sq ft (with installation)</div>
                   </div>
                 </label>
             
@@ -803,7 +831,7 @@ export default function WallpaperOrder() {
             
                   <div>
                     <div className="font-semibold text-gray-900">
-                      Golden/Silver Foil 3D Wallpaper
+                      Premium paper
                     </div>
             
                     <div className="text-sm text-gray-600">
@@ -936,7 +964,7 @@ export default function WallpaperOrder() {
             purpose="wallpaper_order"
             referenceId={pendingOrder.id}
             title="3D wallpaper advance payment"
-            description={`10% advance for your ${formData.wallpaper_type === 'golden_foil' ? 'Golden Foil' : 'Normal'} 3D wallpaper order`}
+            description={`10% advance for your ${formData.wallpaper_type === 'golden_foil' ? 'Premium' : formData.wallpaper_type === 'luxury' ? 'Luxury' : 'Standard'} paper wallpaper order`}
             baseAmount={pendingOrder.advance}
             onPaid={handlePaymentDone}
             onSubmitted={handlePaymentDone}
@@ -982,7 +1010,7 @@ export default function WallpaperOrder() {
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="font-semibold text-gray-900">
-                            {(order as any).is_custom_order ? 'Custom Design' : (order.wallpaper_type === 'golden_foil' ? 'Golden Foil' : 'Normal')} 3D Wallpaper
+                            {(order as any).is_custom_order ? 'Custom Design' : (order.wallpaper_type === 'golden_foil' ? 'Premium paper' : order.wallpaper_type === 'luxury' ? 'Luxury paper' : 'Standard paper')} 3D Wallpaper
                           </h3>
                           {(order as any).is_custom_order && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-800 text-xs font-bold rounded-full border border-amber-300">

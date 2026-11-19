@@ -37,6 +37,7 @@ const friendlyError = (message: string) => {
 };
 
 const formatCurrency = (amount: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
+const customerQuoteTitle = (value: string) => value.replace(/\bAI\b/gi, ' ').replace(/\s+/g, ' ').trim() || 'Interior Quotation';
 const itemAmount = (item: AIItem) => (item.number_of_units || 1) * (item.quantity || 0) * (item.unit_price || 0) * (1 - (item.discount_percent || 0) / 100);
 
 const AIQuotationAssistant = () => {
@@ -59,7 +60,8 @@ const AIQuotationAssistant = () => {
   const [items, setItems] = useState<AIItem[]>([]);
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [activeRoom, setActiveRoom] = useState<string>('summary');
-  const [title, setTitle] = useState('AI Interior Quotation');
+  const [title, setTitle] = useState('Interior Quotation');
+  const [quoteNumber] = useState(() => `QT-${Date.now().toString().slice(-6)}`);
   const [taxRate, setTaxRate] = useState(18);
   const [discount, setDiscount] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -73,7 +75,11 @@ const AIQuotationAssistant = () => {
 
   useEffect(() => {
     if (!projectId) return;
-    void supabase.from('customers').select('id, name, email, phone, location, project_name').eq('id', projectId).maybeSingle().then(({ data }) => setCustomer(data as Customer | null));
+    void supabase.from('customers').select('id, name, email, phone, location, project_name').eq('id', projectId).maybeSingle().then(({ data }) => {
+      const next = data as Customer | null;
+      setCustomer(next);
+      if (next?.project_name) setTitle(current => current === 'Interior Quotation' ? `${next.project_name} Interior Quote` : current);
+    });
   }, [projectId]);
 
   useEffect(() => {
@@ -159,7 +165,8 @@ const AIQuotationAssistant = () => {
     if (!job || !items.length) return;
     setSaving(true); setError(null); setSuccess(null);
     try {
-      const body = { jobId: job.id, title, status, taxRate, discountAmount: discount, description: requirements, notes: (job.assumptions || []).join('\n'), items: items.map(item => ({ roomName: rooms.find(room => room.id === item.room_id)?.name || 'On-Site Work', materialId: item.material_id, itemType: item.item_type, name: item.name, description: item.description, quantity: item.quantity, unit: item.unit, numberOfUnits: item.number_of_units, unitPrice: item.unit_price, discountPercent: item.discount_percent, width: item.width, height: item.height, depth: item.depth })) };
+      const sentTitle = customerQuoteTitle(title);
+      const body = { jobId: job.id, title: sentTitle, quoteNumber, status, taxRate, discountAmount: discount, description: requirements, notes: '', items: items.map(item => ({ roomName: rooms.find(room => room.id === item.room_id)?.name || 'On-Site Work', materialId: item.material_id, itemType: item.item_type, name: item.name, description: item.description, quantity: item.quantity, unit: item.unit, numberOfUnits: item.number_of_units, unitPrice: item.unit_price, discountPercent: item.discount_percent, width: item.width, height: item.height, depth: item.depth })) };
       const { data, error: saveError } = await supabase.functions.invoke('ai-quotation-save-draft', { body });
       if (saveError || !data?.quoteId) throw new Error(data?.error || saveError?.message || 'Could not save quotation.');
       setSuccess(status === 'sent' ? 'Quotation sent to homeowner.' : 'Quotation saved as draft.');
@@ -170,9 +177,10 @@ const AIQuotationAssistant = () => {
 
   const downloadPdf = () => {
     if (!customer) return;
+    const sentTitle = customerQuoteTitle(title);
     generateQuotePdf({
-      quoteNumber: `AI-${job?.id.slice(-8) || 'DRAFT'}`,
-      title,
+      quoteNumber,
+      title: sentTitle,
       projectName: customer.project_name,
       customerName: customer.name,
       items: items.map(item => ({
