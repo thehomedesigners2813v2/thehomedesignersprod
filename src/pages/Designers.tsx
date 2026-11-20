@@ -251,11 +251,11 @@ const Designers = () => {
                 {filteredDesigners.map((designer) => (
                   <div key={designer.id} className="card overflow-hidden flex flex-col">
                     <div className="flex flex-1">
-                      <div className="w-1/3 flex-shrink-0">
+                      <div className="flex w-1/3 flex-shrink-0 items-center justify-center bg-stone-50 p-3">
                        <img
                           src={designer.profile_image || getDesignerFallbackImage(designer.id)}
                           alt={`${designer.name}'s profile`}
-                          className="w-full h-full object-cover min-h-[200px]"
+                          className="h-full max-h-56 w-full object-contain"
                           loading="lazy"
                           onError={(e) => {
                             const fallback = getDesignerFallbackImage(designer.id);
