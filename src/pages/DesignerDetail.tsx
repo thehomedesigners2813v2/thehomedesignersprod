@@ -66,6 +66,8 @@ export default function DesignerDetail() {
   const [completedCount, setCompletedCount] = useState(0);
   const [contact, setContact] = useState<PaidContact | null>(null);
   const [activeProject, setActiveProject] = useState<PortfolioProject | null>(null);
+  const [activeImage, setActiveImage] = useState<string | null>(null);
+  const [pendingQuote, setPendingQuote] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -156,8 +158,34 @@ export default function DesignerDetail() {
     : {};
   const serviceCards = [...services.selected, ...services.custom];
 
+  const homeType = (propertyType: string | null) => {
+    const match = (propertyType || '').match(/(\d+\+?)\s*bhk/i);
+    if (match) return `${match[1]}BHK`;
+    return (propertyType || 'Project').trim();
+  };
+
+  const folderLabel = (project: PortfolioProject) => {
+    const type = homeType(project.property_type);
+    const name = project.project_name || 'Completed project';
+    return `${type} ${name}`;
+  };
+
+  const projectPhotos = (project: PortfolioProject) => [...new Set([
+    ...(project.image_url ? [project.image_url] : []),
+    ...(Array.isArray(project.photos) ? project.photos : []),
+  ].filter((photo): photo is string => Boolean(photo)))];
+
+  const openProject = (project: PortfolioProject, photo?: string) => {
+    const photos = projectPhotos(project);
+    setActiveProject(project);
+    setActiveImage(photo || photos[0] || null);
+  };
+
   const requestQuote = () => {
+    if (isDesigner) return;
     if (!user) {
+      setPendingQuote(true);
+      setAuthMode('login');
       setShowAuthModal(true);
       return;
     }
@@ -177,7 +205,7 @@ export default function DesignerDetail() {
         </button>
 
         <section className="rounded-3xl bg-white p-6 shadow-sm sm:p-8">
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
             {designer.profile_image ? (
               <img src={designer.profile_image} alt="" className="h-28 w-28 rounded-2xl object-cover" />
             ) : (
@@ -196,6 +224,9 @@ export default function DesignerDetail() {
                 </div>
               )}
             </div>
+            {!isDesigner && (
+              <button type="button" onClick={requestQuote} className="btn-primary shrink-0 self-start sm:self-center">Get Quote</button>
+            )}
           </div>
           <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
             {[
@@ -254,26 +285,6 @@ export default function DesignerDetail() {
             </section>
 
             <section className="rounded-3xl bg-white p-6 shadow-sm">
-              <h2 className="text-xl font-semibold">Recent completed projects</h2>
-              {projects.length === 0 ? (
-                <p className="mt-3 text-gray-600">Your completed projects will appear here once you complete your first project.</p>
-              ) : (
-                <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                  {projects.map((project) => (
-                    <button key={project.id} type="button" onClick={() => setActiveProject(project)} className="overflow-hidden rounded-2xl border border-stone-200 text-left">
-                      {(project.image_url || project.photos?.[0]) && <img src={project.image_url || project.photos[0]} alt="" loading="lazy" className="h-40 w-full object-cover" />}
-                      <div className="p-4">
-                        <h3 className="font-semibold">{project.project_name || 'Completed project'}</h3>
-                        <p className="mt-1 text-sm text-gray-600">{[project.property_type, project.location].filter(Boolean).join(' · ')}</p>
-                        {project.completion_date && <p className="mt-1 text-sm text-gray-500">{new Date(project.completion_date).toLocaleDateString('en-IN')}</p>}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </section>
-
-            <section className="rounded-3xl bg-white p-6 shadow-sm">
               <h2 className="text-xl font-semibold">Customer reviews</h2>
               {reviews.length === 0 ? <p className="mt-3 text-gray-600">No reviews yet.</p> : (
                 <div className="mt-4 space-y-4">
@@ -291,6 +302,31 @@ export default function DesignerDetail() {
           </div>
 
           <aside className="space-y-6">
+            <section className="rounded-3xl bg-white p-6 shadow-sm">
+              <h2 className="text-xl font-semibold">Recent completed projects</h2>
+              {projects.length === 0 ? (
+                <p className="mt-3 text-sm text-gray-600">No completed projects yet.</p>
+              ) : (
+                <div className="mt-4 space-y-2">
+                  {projects.map((project) => {
+                    const cover = projectPhotos(project)[0];
+                    return (
+                      <button key={project.id} type="button" onClick={() => openProject(project)} className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-[#F8F7F4]">
+                        {cover ? (
+                          <img src={cover} alt="" loading="lazy" className="h-14 w-14 shrink-0 rounded-lg object-cover" />
+                        ) : (
+                          <span className="h-14 w-14 shrink-0 rounded-lg bg-stone-100" />
+                        )}
+                        <span className="min-w-0">
+                          <span className="block text-xs font-semibold uppercase tracking-wide text-[#D96C4D]">{homeType(project.property_type)}</span>
+                          <span className="block truncate font-semibold">{project.project_name || 'Completed project'}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
             {contact && (
               <div className="sticky top-24 rounded-xl bg-white p-6 shadow-lg">
                 <div className="border-b border-gray-100 pb-5">
@@ -328,16 +364,7 @@ export default function DesignerDetail() {
                     <Navigation className="h-4 w-4" /> Get Directions
                   </button>
                 )}
-                {user && !isDesigner && (
-                  <div className="mt-5 border-t border-gray-100 pt-5">
-                    <button type="button" onClick={requestQuote} className="btn-primary w-full">Get Quote</button>
-                  </div>
-                )}
               </div>
-            )}
-
-            {user && !isDesigner && !contact && (
-              <button type="button" onClick={requestQuote} className="btn-primary w-full">Get Quote</button>
             )}
 
             {designer.awards?.length > 0 && (
@@ -355,25 +382,41 @@ export default function DesignerDetail() {
       </div>
 
       {activeProject && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => { setActiveProject(null); setActiveImage(null); }}>
+          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white p-6" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-2xl font-semibold">{activeProject.project_name || 'Completed project'}</h2>
-                <p className="mt-1 text-sm text-gray-600">{[activeProject.property_type, activeProject.location].filter(Boolean).join(' · ')}</p>
+                <h2 className="text-2xl font-semibold">{folderLabel(activeProject)}</h2>
+                <p className="mt-1 text-sm text-gray-600">{activeProject.location}</p>
               </div>
-              <button type="button" onClick={() => setActiveProject(null)} aria-label="Close"><X className="h-5 w-5" /></button>
+              <button type="button" onClick={() => { setActiveProject(null); setActiveImage(null); }} aria-label="Close"><X className="h-5 w-5" /></button>
             </div>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {[...(activeProject.image_url ? [activeProject.image_url] : []), ...(Array.isArray(activeProject.photos) ? activeProject.photos : [])].filter((photo) => photo).map((photo) => (
-                <img key={photo} src={photo!} alt="" className="h-48 w-full rounded-2xl object-cover" />
+            {activeImage && <img src={activeImage} alt="" className="mt-4 max-h-[28rem] w-full rounded-2xl object-contain" />}
+            <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4">
+              {projectPhotos(activeProject).map((photo) => (
+                <button key={photo} type="button" onClick={() => setActiveImage(photo)} className={`overflow-hidden rounded-xl ${photo === activeImage ? 'ring-2 ring-[#D96C4D]' : ''}`}>
+                  <img src={photo} alt="" className="h-20 w-full object-cover" />
+                </button>
               ))}
             </div>
           </div>
         </div>
       )}
 
-      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} mode={authMode} onModeChange={setAuthMode} onAuthSuccess={() => setShowAuthModal(false)} />
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => { setShowAuthModal(false); setPendingQuote(false); }}
+        mode={authMode}
+        onModeChange={setAuthMode}
+        userType="customer"
+        onAuthSuccess={() => {
+          setShowAuthModal(false);
+          if (pendingQuote) {
+            setPendingQuote(false);
+            navigate('/register-customer');
+          }
+        }}
+      />
     </div>
   );
 }
