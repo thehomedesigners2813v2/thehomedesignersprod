@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Search, Filter, MapPin, Star, IndianRupee as Rupee, Calendar, Sliders, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Designer } from '../lib/supabase';
+import { DESIGNER_CITIES, sublocationsFor } from '../lib/designerLocations';
 
 interface SearchFilters {
   query: string;
   location: string;
+  sublocation: string;
   specialization: string;
   minExperience: number;
   maxExperience: number;
@@ -29,6 +31,7 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onResults, onLoading })
   const [filters, setFilters] = useState<SearchFilters>({
     query: '',
     location: '',
+    sublocation: '',
     specialization: '',
     minExperience: 0,
     maxExperience: 20,
@@ -72,7 +75,9 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onResults, onLoading })
 
       if (error) throw error;
 
-      const locations = [...new Set(designers?.map(d => d.location) || [])];
+      const locations = [...new Set(designers?.map(d => d.location) || [])].filter((location) =>
+        DESIGNER_CITIES.some((city) => city.toLowerCase() === String(location).toLowerCase())
+      );
       const specializations = [...new Set(designers?.map(d => d.specialization) || [])];
       const services = [...new Set(designers?.flatMap(d => d.services || []) || [])];
       const materials = [...new Set(designers?.flatMap(d => d.materials_expertise || []) || [])];
@@ -94,7 +99,7 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onResults, onLoading })
 
       let query = supabase
         .from('designers')
-        .select('id, name, specialization, experience, location, bio, website, starting_price, profile_image, portfolio_images, services, materials_expertise, awards, rating, total_reviews, total_projects, is_verified, is_active')
+        .select('id, name, specialization, experience, location, sublocation, bio, website, starting_price, profile_image, portfolio_images, services, materials_expertise, awards, rating, total_reviews, total_projects, is_verified, is_active')
         .eq('is_active', true)
         .eq('verification_status', 'verified');
 
@@ -105,6 +110,10 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onResults, onLoading })
 
       if (filters.location) {
         query = query.eq('location', filters.location);
+      }
+
+      if (filters.sublocation) {
+        query = query.eq('sublocation', filters.sublocation);
       }
 
       if (filters.specialization) {
@@ -169,7 +178,11 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onResults, onLoading })
   };
 
   const handleFilterChange = (key: keyof SearchFilters, value: any) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters(prev => ({
+      ...prev,
+      [key]: value,
+      ...(key === 'location' ? { sublocation: '' } : {})
+    }));
   };
 
   const handleServiceToggle = (service: string) => {
@@ -194,6 +207,7 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onResults, onLoading })
     setFilters({
       query: '',
       location: '',
+      sublocation: '',
       specialization: '',
       minExperience: 0,
       maxExperience: 20,
@@ -210,6 +224,7 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onResults, onLoading })
 
   const activeFiltersCount = [
     filters.location,
+    filters.sublocation,
     filters.specialization,
     filters.minExperience > 0,
     filters.maxExperience < 20,
@@ -281,6 +296,24 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onResults, onLoading })
                 <option value="">All Locations</option>
                 {availableOptions.locations.map(location => (
                   <option key={location} value={location}>{location}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <MapPin className="w-4 h-4 inline mr-1" />
+                Area
+              </label>
+              <select
+                value={filters.sublocation}
+                onChange={(e) => handleFilterChange('sublocation', e.target.value)}
+                disabled={!filters.location}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-50"
+              >
+                <option value="">{filters.location ? 'All areas' : 'Select a city first'}</option>
+                {sublocationsFor(filters.location).map(area => (
+                  <option key={area} value={area}>{area}</option>
                 ))}
               </select>
             </div>
@@ -470,6 +503,14 @@ const AdvancedSearch: React.FC<AdvancedSearchProps> = ({ onResults, onLoading })
               <span className="bg-primary-100 text-primary-800 px-2 py-1 rounded-full text-xs flex items-center space-x-1">
                 <span>Location: {filters.location}</span>
                 <button onClick={() => handleFilterChange('location', '')}>
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            {filters.sublocation && (
+              <span className="bg-primary-100 text-primary-800 px-2 py-1 rounded-full text-xs flex items-center space-x-1">
+                <span>Area: {filters.sublocation}</span>
+                <button onClick={() => handleFilterChange('sublocation', '')}>
                   <X className="w-3 h-3" />
                 </button>
               </span>

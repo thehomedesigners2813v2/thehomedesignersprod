@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Star, MapPin, User, Award, Eye, Heart, Share2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Designer } from '../lib/supabase';
+import { formatDesignerArea } from '../lib/designerLocations';
 import AdvancedSearch from '../components/AdvancedSearch';
 
 const EnhancedDesigners = () => {
@@ -42,7 +43,7 @@ const EnhancedDesigners = () => {
       try {
         await navigator.share({
           title: `${designer.name} - Interior Designer`,
-          text: `Check out ${designer.name}, a ${designer.specialization} designer in ${designer.location}`,
+          text: `Check out ${designer.name}, a ${designer.specialization} designer in ${formatDesignerArea(designer.location, designer.sublocation)}`,
           url: `${window.location.origin}/designers/${designer.id}`
         });
       } catch (error) {
@@ -220,7 +221,7 @@ const EnhancedDesigners = () => {
                   <div className="flex items-center space-x-4 mb-4 text-sm text-gray-600">
                     <div className="flex items-center space-x-1">
                       <MapPin className="w-4 h-4" />
-                      <span>{designer.location}</span>
+                      <span>{formatDesignerArea(designer.location, designer.sublocation)}</span>
                     </div>
                     <span>•</span>
                     <span>{designer.experience} years</span>
@@ -319,7 +320,7 @@ const EnhancedDesigners = () => {
                         <div className="flex items-center space-x-4 text-sm text-gray-600 mb-3">
                           <div className="flex items-center space-x-1">
                             <MapPin className="w-4 h-4" />
-                            <span>{designer.location}</span>
+                            <span>{formatDesignerArea(designer.location, designer.sublocation)}</span>
                           </div>
                           <span>•</span>
                           <span>{designer.experience} years experience</span>

@@ -14,6 +14,7 @@ import {
   decodeSelection,
   encodeSelection
 } from '../lib/designerCatalog';
+import { DESIGNER_CITIES, sublocationsFor } from '../lib/designerLocations';
 
 type Section = 'overview' | 'basic' | 'about' | 'services' | 'materials' | 'portfolio' | 'reviews' | 'preview';
 
@@ -46,7 +47,7 @@ export default function DesignerProfileManager() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [basic, setBasic] = useState({ name: '', specialization: '', location: '', profile_image: '' });
+  const [basic, setBasic] = useState({ name: '', specialization: '', location: '', sublocation: '', profile_image: '' });
   const [about, setAbout] = useState({ experience: '', bio: '' });
   const [serviceIds, setServiceIds] = useState<string[]>([]);
   const [customServices, setCustomServices] = useState<{ name: string; imageUrl?: string }[]>([]);
@@ -64,6 +65,7 @@ export default function DesignerProfileManager() {
       name: designer.name || '',
       specialization: designer.specialization || '',
       location: designer.location || '',
+      sublocation: designer.sublocation || '',
       profile_image: designer.profile_image || ''
     });
     setAbout({ experience: String(designer.experience ?? ''), bio: designer.bio || '' });
@@ -257,7 +259,14 @@ export default function DesignerProfileManager() {
               <h1 className="text-2xl font-semibold">Basic Information</h1>
               <input className="w-full rounded-lg border px-3 py-2" value={basic.name} onChange={(event) => setBasic({ ...basic, name: event.target.value })} placeholder="Business or designer name" required />
               <input className="w-full rounded-lg border px-3 py-2" value={basic.specialization} onChange={(event) => setBasic({ ...basic, specialization: event.target.value })} placeholder="Design style or specialization" required />
-              <input className="w-full rounded-lg border px-3 py-2" value={basic.location} onChange={(event) => setBasic({ ...basic, location: event.target.value })} placeholder="City and location" required />
+              <select className="w-full rounded-lg border px-3 py-2" value={basic.location} onChange={(event) => setBasic({ ...basic, location: event.target.value, sublocation: '' })} required>
+                <option value="">Select city</option>
+                {DESIGNER_CITIES.map((city) => <option key={city} value={city}>{city}</option>)}
+              </select>
+              <select className="w-full rounded-lg border px-3 py-2" value={basic.sublocation} onChange={(event) => setBasic({ ...basic, sublocation: event.target.value })} required disabled={!basic.location}>
+                <option value="">{basic.location ? 'Select area within the city' : 'Select a city first'}</option>
+                {sublocationsFor(basic.location).map((area) => <option key={area} value={area}>{area}</option>)}
+              </select>
               <label className="block text-sm">Profile photograph or logo
                 <input type="file" accept="image/*" className="mt-2 block" onChange={(event) => event.target.files?.[0] && uploadProfile(event.target.files[0])} />
               </label>

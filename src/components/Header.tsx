@@ -167,7 +167,7 @@ const Header = () => {
     <>
       <header className="bg-white shadow-lg sticky top-0 z-50">
         <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center h-16 gap-6">
+          <div className="flex items-center h-20 gap-4">
 
             {/* Logo / Application Name */}
             <Link
@@ -175,17 +175,10 @@ const Header = () => {
               className="flex items-center gap-3 flex-shrink-0 whitespace-nowrap min-w-fit"
             >
               <img
-                src="/logo-mark.png"
-                alt=""
-                className="h-9 w-9 flex-shrink-0 object-contain"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
+                src="/logo.png"
+                alt="TheHomeDesigners.in"
+                className="h-16 w-auto max-w-[280px] flex-shrink-0 object-contain object-left sm:max-w-none"
               />
-
-              <span className="text-xl font-bold text-secondary-800 whitespace-nowrap leading-none">
-                TheHomeDesigners
-              </span>
             </Link>
 
             {/* Desktop Navigation */}

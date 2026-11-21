@@ -10,7 +10,12 @@ import QuoteMessagingPanel from '../components/QuoteMessagingPanel';
 interface Quote {
   id: string;
   designer_id: string;
-  project_id: string;
+  project_id: string | null;
+  quote_type?: 'project' | 'offline';
+  customer_name?: string | null;
+  customer_email?: string | null;
+  customer_phone?: string | null;
+  customer_address?: string | null;
   quote_number: string;
   title: string;
   description: string;
@@ -197,7 +202,8 @@ const DesignerQuotes = () => {
         throw error;
       }
 
-      setSuccess('Quote sent to customer successfully!');
+      const sent = quotes.find((quote) => quote.id === id);
+      setSuccess(sent?.quote_type === 'offline' ? 'Offline quotation marked as given to the customer.' : 'Quote sent to customer successfully!');
       fetchQuotes();
     } catch (error: any) {
       console.error('Error sending quote:', error);
@@ -211,8 +217,9 @@ const DesignerQuotes = () => {
     const matchesSearch = !searchTerm || 
                          quote.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          quote.quote_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         quote.project?.project_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         quote.project?.name.toLowerCase().includes(searchTerm.toLowerCase());
+                         (quote.project?.project_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (quote.project?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (quote.customer_name || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = !statusFilter || quote.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -302,13 +309,22 @@ const DesignerQuotes = () => {
                 Manage quotes for your customer projects
               </p>
             </div>
-            <button
-              onClick={() => navigate('/customer-projects')}
-              className="btn-primary flex items-center space-x-2"
-            >
-              <Plus className="w-5 h-5" />
-              <span>Create New Quote</span>
-            </button>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button
+                onClick={() => navigate('/create-offline-quote')}
+                className="inline-flex items-center justify-center space-x-2 rounded-lg border border-primary-600 px-4 py-2 font-medium text-primary-700 hover:bg-primary-50"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Offline Quotation</span>
+              </button>
+              <button
+                onClick={() => navigate('/customer-projects')}
+                className="btn-primary flex items-center space-x-2"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Create New Quote</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -411,7 +427,7 @@ const DesignerQuotes = () => {
                   <div className="space-y-2 text-sm text-gray-600">
                     <div className="flex items-center space-x-2">
                       <FileText className="w-4 h-4" />
-                      <span>Project: {quote.project?.project_name}</span>
+                      <span>{quote.quote_type === 'offline' ? `Walk-in: ${quote.customer_name || 'Customer'}` : `Project: ${quote.project?.project_name || ''}`}</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Calendar className="w-4 h-4" />
@@ -504,13 +520,13 @@ const DesignerQuotes = () => {
                     
                     {quote.status === 'draft' && (
                       <>
-                        <button
+                        {quote.project_id && <button
                           onClick={() => navigate(`/generate-quote/${quote.project_id}`)}
                           className="bg-secondary-500 hover:bg-secondary-600 text-white py-2 px-3 rounded-lg font-medium transition-colors"
                           title="Edit"
                         >
                           <Edit className="w-4 h-4" />
-                        </button>
+                        </button>}
                         <button
                           onClick={() => handleSendQuote(quote.id)}
                           className="bg-green-500 hover:bg-green-600 text-white py-2 px-3 rounded-lg font-medium transition-colors"

@@ -6,6 +6,7 @@ import { supabase, type Designer } from '../lib/supabase';
 import AuthModal from '../components/AuthModal';
 import DealCard from '../components/DealCard';
 import DesignerSearchBar from '../components/DesignerSearchBar';
+import { DESIGNER_CITIES } from '../lib/designerLocations';
 import FeaturedDesignerCard from '../components/FeaturedDesignerCard';
 
 type Deal = {
@@ -46,7 +47,7 @@ export default function Home() {
       setLoading(true);
       setError(false);
       const [designersResult, dealsResult, reviewsResult, designerCount, projectCount, reviewCount] = await Promise.all([
-        supabase.from('designers').select('id, name, specialization, location, profile_image, portfolio_images, rating, total_reviews, total_projects, is_verified, is_active').eq('is_active', true).eq('verification_status', 'verified').order('rating', { ascending: false }).order('total_reviews', { ascending: false }).limit(4),
+        supabase.from('designers').select('id, name, specialization, location, sublocation, profile_image, portfolio_images, rating, total_reviews, total_projects, is_verified, is_active').eq('is_active', true).eq('verification_status', 'verified').order('rating', { ascending: false }).order('total_reviews', { ascending: false }).limit(4),
         supabase.from('designer_deals').select('id, title, description, discount_percentage, original_price, deal_price, deal_type, valid_until, image_url, designers(id, name, profile_image)').eq('is_active', true).lte('valid_from', new Date().toISOString()).gte('valid_until', new Date().toISOString()).order('is_featured', { ascending: false }).order('created_at', { ascending: false }).limit(3),
         supabase.from('reviews').select('id, rating, title, comment, created_at').eq('verified_purchase', true).order('created_at', { ascending: false }).limit(3),
         supabase.from('designers').select('id', { count: 'exact', head: true }).eq('is_active', true).eq('verification_status', 'verified'),
@@ -71,12 +72,12 @@ export default function Home() {
     void loadHomepage();
   }, []);
 
-  const locations = designers.map((designer) => designer.location).filter(Boolean);
   const specializations = designers.map((designer) => designer.specialization).filter(Boolean);
 
-  const handleSearch = (values: { location: string; specialization: string; search: string }) => {
+  const handleSearch = (values: { location: string; sublocation: string; specialization: string; search: string }) => {
     const params = new URLSearchParams();
     if (values.location) params.set('city', values.location);
+    if (values.sublocation) params.set('area', values.sublocation);
     if (values.specialization) params.set('specialization', values.specialization);
     if (values.search) params.set('search', values.search);
     navigate(`/designers${params.toString() ? `?${params.toString()}` : ''}`);
@@ -108,7 +109,7 @@ export default function Home() {
           <p className="absolute bottom-6 right-6 max-w-48 text-right font-serif text-2xl italic leading-tight text-white">Beautiful homes. Happier lives.</p>
         </div>
       </div>
-      <div className="relative z-20 mx-auto mt-8 max-w-7xl px-4 sm:px-6 lg:px-8"><DesignerSearchBar locations={locations} specializations={specializations} onSearch={handleSearch} /></div>
+      <div className="relative z-20 mx-auto mt-8 max-w-7xl px-4 sm:px-6 lg:px-8"><DesignerSearchBar locations={[...DESIGNER_CITIES]} specializations={specializations} onSearch={handleSearch} /></div>
     </section>
 
     <main>

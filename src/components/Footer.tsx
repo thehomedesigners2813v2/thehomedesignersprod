@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Home as HomeIcon, Mail, MapPin, Download } from 'lucide-react';
+import { Mail, MapPin, Download } from 'lucide-react';
 import { triggerInstallPrompt } from './InstallPrompt';
 
 const Footer = () => {
@@ -10,11 +10,8 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="col-span-1">
-            <Link to="/" className="flex items-center space-x-2 mb-4">
-              <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-accent-500 rounded-lg flex items-center justify-center">
-                <HomeIcon className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold">TheHomeDesigners</span>
+            <Link to="/" className="mb-4 inline-flex rounded-lg bg-white px-2 py-1">
+              <img src="/logo.png" alt="TheHomeDesigners.in" className="h-12 w-auto object-contain" />
             </Link>
             <p className="text-gray-300 mb-4">
               Premium home interior design services across India. Transform your space with our expert designers.

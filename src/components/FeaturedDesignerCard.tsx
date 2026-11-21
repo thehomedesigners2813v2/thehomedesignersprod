@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { MapPin, Star, UserRound, CheckCircle2, ArrowUpRight } from 'lucide-react';
 import type { Designer } from '../lib/supabase';
+import { formatDesignerArea } from '../lib/designerLocations';
 
 type FeaturedDesignerCardProps = {
   designer: Designer;
@@ -37,7 +38,7 @@ export default function FeaturedDesignerCard({ designer }: FeaturedDesignerCardP
           </div>
         </div>
         <div className="mt-4 flex items-center justify-between gap-3 text-sm text-stone-600">
-          <span className="flex min-w-0 items-center gap-1.5 truncate"><MapPin className="h-4 w-4 shrink-0" aria-hidden="true" />{designer.location || 'Service area available'}</span>
+          <span className="flex min-w-0 items-center gap-1.5 truncate"><MapPin className="h-4 w-4 shrink-0" aria-hidden="true" />{formatDesignerArea(designer.location, designer.sublocation) || 'Service area available'}</span>
           <span className="flex shrink-0 items-center gap-1 font-semibold text-secondary-800"><Star className="h-4 w-4 fill-amber-400 text-amber-400" aria-hidden="true" />{Number(designer.rating || 0).toFixed(1)} <span className="font-normal text-stone-500">({designer.total_reviews || 0})</span></span>
         </div>
         <Link to={`/designers/${designer.id}`} className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-primary-700 transition hover:text-primary-900">View Profile <ArrowUpRight className="h-4 w-4" aria-hidden="true" /></Link>

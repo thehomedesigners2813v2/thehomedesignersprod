@@ -130,6 +130,7 @@ export type Designer = {
   specialization: string;
   experience: number;
   location: string;
+  sublocation?: string | null;
   bio?: string;
   website?: string;
   starting_price?: string;

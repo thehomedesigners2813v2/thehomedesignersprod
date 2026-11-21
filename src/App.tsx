@@ -411,6 +411,15 @@ const AppContent: React.FC = () => {
             />
 
             <Route
+              path="/create-offline-quote"
+              element={
+                <ProtectedDesignerRoute>
+                  <DesignerQuoteGenerator />
+                </ProtectedDesignerRoute>
+              }
+            />
+
+            <Route
               path="/generate-quote/:id"
               element={
                 <ProtectedDesignerRoute>

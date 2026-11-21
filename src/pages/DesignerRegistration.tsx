@@ -15,6 +15,7 @@ import {
   encodeSelection,
   type CustomEntry
 } from '../lib/designerCatalog';
+import { DESIGNER_CITIES, sublocationsFor } from '../lib/designerLocations';
 
 const DesignerRegistration = () => {
   const navigate = useNavigate();
@@ -46,6 +47,7 @@ const DesignerRegistration = () => {
     specialization: '',
     experience: '',
     location: '',
+    sublocation: '',
     bio: '',
     website: '',
     starting_price: '',
@@ -73,10 +75,7 @@ const DesignerRegistration = () => {
     'Bohemian'
   ];
 
-  const locations = [
-    'Pune',
-    'Mumbai'
-  ];
+  const locations = [...DESIGNER_CITIES];
 
   useEffect(() => {
     if (authLoading) return;
@@ -105,6 +104,7 @@ const DesignerRegistration = () => {
           specialization: designer.specialization || '',
           experience: designer.experience?.toString() || '',
           location: designer.location || '',
+          sublocation: designer.sublocation || '',
           bio: designer.bio || '',
           website: designer.website || '',
           starting_price: designer.starting_price || '',
@@ -149,7 +149,8 @@ const DesignerRegistration = () => {
 
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: value,
+      ...(name === 'location' ? { sublocation: '' } : {})
     }));
 
     if (name === 'email') {
@@ -461,6 +462,10 @@ const DesignerRegistration = () => {
       setError('Location is required');
       return false;
     }
+    if (!formData.sublocation || !sublocationsFor(formData.location).includes(formData.sublocation)) {
+      setError('Select an area within your city');
+      return false;
+    }
     return true;
   };
 
@@ -494,6 +499,7 @@ const DesignerRegistration = () => {
         specialization: formData.specialization,
         experience: parseInt(formData.experience),
         location: formData.location,
+        sublocation: formData.sublocation,
         bio: formData.bio.trim(),
         website: formData.website.trim(),
         starting_price: formData.starting_price.trim(),
@@ -574,6 +580,7 @@ const DesignerRegistration = () => {
             p_specialization: cleanedData.specialization,
             p_experience: cleanedData.experience,
             p_location: cleanedData.location,
+            p_sublocation: cleanedData.sublocation,
             p_bio: cleanedData.bio,
             p_website: cleanedData.website,
             p_starting_price: cleanedData.starting_price,
@@ -908,6 +915,28 @@ const DesignerRegistration = () => {
                         <option value="">Select your city</option>
                         {locations.map(location => (
                           <option key={location} value={location}>{location}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Area within city *
+                    </label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <select
+                        name="sublocation"
+                        value={formData.sublocation}
+                        onChange={handleInputChange}
+                        className="pl-10 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-50"
+                        required
+                        disabled={!formData.location}
+                      >
+                        <option value="">{formData.location ? 'Select your area' : 'Select a city first'}</option>
+                        {sublocationsFor(formData.location).map(area => (
+                          <option key={area} value={area}>{area}</option>
                         ))}
                       </select>
                     </div>

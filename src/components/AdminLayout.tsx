@@ -118,9 +118,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({
       {/* Fixed sidebar header */}
       <div className="flex h-16 shrink-0 items-center gap-2 border-b border-secondary-700/50 px-3">
 
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-500">
-          <LayoutDashboard className="h-5 w-5 text-white" />
-        </div>
+        <img src="/logo-mark.png" alt="" className="h-9 w-9 shrink-0 rounded-lg bg-white object-contain" />
 
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-white">

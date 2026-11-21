@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Star, MapPin, Filter, Search, Building2, Wifi } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Designer } from '../lib/supabase';
+import { DESIGNER_CITIES, formatDesignerArea, sublocationsFor } from '../lib/designerLocations';
 
 const designerFallbackImages = [
   'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=400',
@@ -29,13 +30,15 @@ const Designers = () => {
   const [searchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState(() => searchParams.get('search') || '');
   const [selectedCity, setSelectedCity] = useState(() => searchParams.get('city') || '');
+  const [selectedArea, setSelectedArea] = useState(() => searchParams.get('area') || '');
   const [selectedSpecialization, setSelectedSpecialization] = useState(() => searchParams.get('specialization') || '');
   const [selectedExperience, setSelectedExperience] = useState('');
   const [designers, setDesigners] = useState<Designer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const cities = ['Pune', 'Mumbai'];
+  const cities = [...DESIGNER_CITIES];
+  const areas = sublocationsFor(selectedCity);
   const specializations = ['Modern & Contemporary', 'Traditional Indian', 'Minimalist Design', 'Luxury & High-End', 'Eco-Friendly Design', 'Industrial & Loft', 'Scandinavian'];
   const experienceRanges = ['0-5 years', '5-10 years', '10+ years'];
 
@@ -50,7 +53,7 @@ const Designers = () => {
       
       const { data, error } = await supabase
         .from('designers')
-        .select('id, user_id, name, specialization, experience, location, bio, website, starting_price, profile_image, portfolio_images, services, materials_expertise, awards, rating, total_reviews, total_projects, is_verified, is_active, business_type, google_location_url, created_at, updated_at')
+        .select('id, user_id, name, specialization, experience, location, sublocation, bio, website, starting_price, profile_image, portfolio_images, services, materials_expertise, awards, rating, total_reviews, total_projects, is_verified, is_active, business_type, google_location_url, created_at, updated_at')
         .eq('is_active', true)
         .eq('verification_status', 'verified')
         .order('created_at', { ascending: false });
@@ -75,10 +78,12 @@ const Designers = () => {
     const matchesSearch = !searchTerm || 
       designer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       designer.specialization.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      designer.location.toLowerCase().includes(searchTerm.toLowerCase());
+      designer.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (designer.sublocation || '').toLowerCase().includes(searchTerm.toLowerCase());
 
     // City filter - use includes to handle "Pune, Maharashtra" etc.
     const matchesCity = !selectedCity || designer.location.toLowerCase().includes(selectedCity.toLowerCase());
+    const matchesArea = !selectedArea || (designer.sublocation || '').toLowerCase() === selectedArea.toLowerCase();
 
     // Specialization filter
     const matchesSpecialization = !selectedSpecialization || designer.specialization === selectedSpecialization;
@@ -98,7 +103,7 @@ const Designers = () => {
       }
     })();
 
-    return matchesSearch && matchesCity && matchesSpecialization && matchesExperience;
+    return matchesSearch && matchesCity && matchesArea && matchesSpecialization && matchesExperience;
   });
 
   if (loading) {
@@ -175,12 +180,30 @@ const Designers = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
                 <select
                   value={selectedCity}
-                  onChange={(e) => setSelectedCity(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedCity(e.target.value);
+                    setSelectedArea('');
+                  }}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 >
                   <option value="">All Cities</option>
                   {cities.map(city => (
                     <option key={city} value={city}>{city}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Area</label>
+                <select
+                  value={selectedArea}
+                  onChange={(e) => setSelectedArea(e.target.value)}
+                  disabled={!selectedCity}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-50"
+                >
+                  <option value="">{selectedCity ? 'All areas' : 'Select a city first'}</option>
+                  {areas.map(area => (
+                    <option key={area} value={area}>{area}</option>
                   ))}
                 </select>
               </div>
@@ -219,6 +242,7 @@ const Designers = () => {
                 onClick={() => {
                   setSearchTerm('');
                   setSelectedCity('');
+                  setSelectedArea('');
                   setSelectedSpecialization('');
                   setSelectedExperience('');
                 }}
@@ -314,10 +338,10 @@ const Designers = () => {
                                 className="text-primary-600 hover:underline"
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                {designer.location}
+                                {formatDesignerArea(designer.location, designer.sublocation)}
                               </a>
                             ) : (
-                              <span>{designer.location}</span>
+                              <span>{formatDesignerArea(designer.location, designer.sublocation)}</span>
                             )}
                           </div>
                           <span>{designer.experience} yrs exp</span>

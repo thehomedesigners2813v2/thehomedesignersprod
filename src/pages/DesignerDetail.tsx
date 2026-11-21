@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import AuthModal from '../components/AuthModal';
 import { MATERIAL_CATALOG, SERVICE_CATALOG, resolveSelection } from '../lib/designerCatalog';
 import IntroVideo from '../components/designer/IntroVideo';
+import { formatDesignerArea } from '../lib/designerLocations';
 
 type PublicDesigner = {
   id: string;
@@ -13,6 +14,7 @@ type PublicDesigner = {
   specialization: string;
   experience: number;
   location: string;
+  sublocation?: string | null;
   bio?: string;
   website?: string;
   profile_image?: string;
@@ -54,7 +56,7 @@ type PaidContact = {
   starting_price: string | null;
 };
 
-const publicColumns = 'id, name, specialization, experience, location, bio, website, profile_image, services, materials_expertise, awards, rating, total_reviews, is_verified, google_location_url, intro_youtube_id, intro_video_url';
+const publicColumns = 'id, name, specialization, experience, location, sublocation, bio, website, profile_image, services, materials_expertise, awards, rating, total_reviews, is_verified, google_location_url, intro_youtube_id, intro_video_url';
 
 export default function DesignerDetail() {
   const { id } = useParams();
@@ -217,7 +219,7 @@ export default function DesignerDetail() {
                 {designer.is_verified && <span className="inline-flex items-center gap-1 rounded-full bg-[#F8F7F4] px-2 py-1 text-xs font-medium"><BadgeCheck className="h-4 w-4 text-[#D96C4D]" /> Verified</span>}
               </div>
               <p className="mt-2 text-lg">{designer.specialization}</p>
-              <p className="mt-1 inline-flex items-center gap-1 text-sm text-gray-600"><MapPin className="h-4 w-4" /> {designer.location}</p>
+              <p className="mt-1 inline-flex items-center gap-1 text-sm text-gray-600"><MapPin className="h-4 w-4" /> {formatDesignerArea(designer.location, designer.sublocation)}</p>
               {(designer.intro_youtube_id || designer.intro_video_url) && (
                 <div className="mt-4">
                   <IntroVideo videoId={designer.intro_youtube_id} videoUrl={designer.intro_video_url} name={designer.name} />
