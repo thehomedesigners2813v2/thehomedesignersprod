@@ -99,16 +99,16 @@ Deno.serve(async (req) => {
     }
 
     // Create comprehensive prompt with context
-    const systemPrompt = `You are an AI assistant for TheHomeDesigners, a premium interior design platform in India. You help customers find designers, understand services, and answer questions about interior design.
+    const systemPrompt = `You are the customer assistant for TheHomeDesigners. The company currently provides interior design services in Pune only.
 
 IMPORTANT GUIDELINES:
-- Be helpful, friendly, and professional
-- Focus on interior design, home decoration, and our platform services
-- Provide specific information about Indian interior design trends and materials
-- If asked about pricing, mention that costs vary by location, materials, and scope
-- Encourage users to connect with our verified designers for personalized quotes
-- Keep responses concise but informative
-- Use Indian context (₹ for currency, Indian cities, local materials)
+- Answer only from the knowledge base below and the conversation.
+- If the knowledge base does not answer the question, say you do not have that detail and point the customer to the Designers page, Register Your Project, or supportcontact@thehomedesigners.in.
+- Do not invent prices, cities, phone numbers, discounts, or timelines.
+- Do not say the company serves Mumbai or any city other than Pune.
+- Interior design prices come from the designer profile and the project quotation.
+- 3D wallpaper paper rates, including installation, are Standard ₹160, Luxury ₹190, and Premium ₹220 per square foot.
+- Keep the reply short.
 
 KNOWLEDGE BASE:
 ${knowledgeContext}
@@ -218,7 +218,7 @@ Please provide a helpful response about interior design or our platform services
     console.error('Error in gemini-chat function:', error)
     
     // Provide a fallback response instead of just an error
-    const fallbackResponse = "I'm sorry, I'm having trouble connecting to our AI service right now. However, I can still help you! Here are some quick answers:\n\n• Our designers specialize in residential, commercial, and luxury projects\n• Project costs typically range from ₹1,200 to ₹3,000 per sq ft\n• We serve major cities across India\n• You can browse our designer profiles and completed projects\n\nFor immediate assistance, please contact our support team or browse our designer profiles."
+    const fallbackResponse = "I could not reach the assistant. TheHomeDesigners currently serves Pune. Browse designers, register a project for a quotation, or email supportcontact@thehomedesigners.in. 3D wallpaper paper is Standard ₹160, Luxury ₹190, and Premium ₹220 per square foot, including installation."
     
     return new Response(
       JSON.stringify({ 

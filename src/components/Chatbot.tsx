@@ -162,7 +162,7 @@ const Chatbot = () => {
 
       const welcomeMessage: Message = {
         id: 'welcome',
-        message: "👋 Hi! I'm your AI design assistant. How can I help you find the details you need or answer a general question?",
+        message: "Hi. I can help you find a Pune designer, understand quotations, or choose a 3D wallpaper. What would you like to know?",
         sender: 'bot',
         timestamp: new Date(),
         message_type: 'welcome'
@@ -188,53 +188,37 @@ const Chatbot = () => {
    * Queries the static knowledge base (Supabase) for specific, reliable answers.
    */
   const getKnowledgeBaseResponse = async (text: string, action: string | null): Promise<string | null> => {
-    const queryText = text.toLowerCase();
-    
     try {
-      // 1. Prioritize Quick Reply Action Match
+      const { data, error } = await supabase
+        .from('chatbot_knowledge')
+        .select('category, question, answer, keywords, priority')
+        .eq('is_active', true);
+
+      if (error) throw error;
+      const rows = data || [];
       if (action) {
-         const actionSearch = action.replace(/_/g, ' '); 
-         
-         const { data, error } = await supabase
-           .from('chatbot_knowledge')
-           .select('answer')
-           .or(`category.eq.${action},question.ilike.%${actionSearch}%`) 
-           .eq('is_active', true)
-           .order('priority', { ascending: false }) 
-           .limit(1);
-
-         if (error) throw error;
-         if (data && data.length > 0) {
-           return data[0].answer;
-         }
-      }
-      
-      // 2. Fallback: General Keyword Search with Filtering
-      const stopWords = new Set(['what', 'how', 'when', 'the', 'and', 'design', 'about', 'services', 'find', 'right', 'can', 'i', 'a', 'do', 'you', 'project', 'help', 'me', 'with', 'is', 'it']);
-      
-      const importantKeywords = queryText
-        .split(/\s+/)
-        .filter(word => word.length > 3 && !stopWords.has(word));
-      
-      if (importantKeywords.length > 0) {
-        // Construct a partial text match condition
-        const searchConditions = importantKeywords.map(kw => `question.ilike.%${kw}%`).join(',');
-
-        const { data, error } = await supabase
-          .from('chatbot_knowledge')
-          .select('answer')
-          .or(searchConditions) 
-          .eq('is_active', true)
-          .order('priority', { ascending: false }) 
-          .limit(1);
-
-        if (error) throw error;
-        if (data && data.length > 0) {
-          return data[0].answer;
-        }
+        const byCategory = rows
+          .filter((row) => row.category === action)
+          .sort((left, right) => (right.priority || 0) - (left.priority || 0))[0];
+        if (byCategory) return byCategory.answer;
       }
 
-      return null; 
+      const words = text.toLowerCase().split(/[^a-z0-9]+/).filter((word) => word.length > 2 && !['the', 'and', 'you', 'your', 'for', 'with', 'can', 'how', 'what'].includes(word));
+      const ranked = rows
+        .map((row) => {
+          const question = row.question.toLowerCase();
+          const keywords = (row.keywords || []).map((keyword: string) => keyword.toLowerCase());
+          const score = words.reduce((total, word) => {
+            const inQuestion = question.includes(word) ? 3 : 0;
+            const inKeywords = keywords.some((keyword) => keyword.includes(word) || word.includes(keyword)) ? 4 : 0;
+            return total + inQuestion + inKeywords;
+          }, 0);
+          return { row, score };
+        })
+        .filter((item) => item.score >= 4)
+        .sort((left, right) => right.score - left.score || (right.row.priority || 0) - (left.row.priority || 0));
+
+      return ranked[0]?.row.answer || null;
     } catch (error) {
       console.error('Error fetching knowledge base response:', error);
       return null;
@@ -398,12 +382,12 @@ const Chatbot = () => {
         } catch (aiError) {
           // Specific fallback for AI service failure (due to custom function error)
           console.error('AI service failure:', aiError); 
-          botResponse = "I'm sorry, there was a problem connecting to our AI service. However, I can still help you with basic questions about our interior design services. You can also browse our designer profiles and completed projects, or contact our support team directly.";
+          botResponse = "I could not reach the assistant. Email supportcontact@thehomedesigners.in, or use the suggested questions for designers, quotations, and 3D wallpaper in Pune.";
         }
       } 
       // 3. Final Basic Fallback
       else {
-        botResponse = "Thank you for your message. Our team will review it and get back to you soon.";
+        botResponse = "Email supportcontact@thehomedesigners.in and include your question. This chat can answer questions about Pune designers, quotations, and 3D wallpaper.";
       }
 
       // Add bot message
@@ -414,9 +398,6 @@ const Chatbot = () => {
         timestamp: new Date()
       };
       setMessages(prev => [...prev, botMessage]);
-      
-      // VOICE: Read the response aloud
-      textToSpeech(botResponse);
 
       // Save bot message to database
       await supabase
