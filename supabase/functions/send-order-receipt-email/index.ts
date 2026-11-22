@@ -204,7 +204,7 @@ Deno.serve(async (req: Request) => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "The Home Designers <orders@thehomedesigners.com>",
+        from: "The Home Designers <orders@thehomedesigners.in>",
         to: [payload.customerEmail],
         subject: `3D Wallpaper Order Receipt - Order #${payload.orderId.substring(0, 8)}`,
         html: emailBody,

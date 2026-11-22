@@ -10,7 +10,7 @@ export async function deliverHtmlEmail(input: {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${resendKey}` },
       body: JSON.stringify({
-        from: "The Home Designers <orders@thehomedesigners.com>",
+        from: "The Home Designers <orders@thehomedesigners.in>",
         to: [input.to],
         subject: input.subject,
         html: input.html,
@@ -31,7 +31,7 @@ export async function deliverHtmlEmail(input: {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      From: { Email: "orders@thehomedesigners.com", Name: "The Home Designers" },
+      From: { Email: "orders@thehomedesigners.in", Name: "The Home Designers" },
       To: [{ Email: input.to, Name: input.name || input.to }],
       Subject: input.subject,
       HTML: input.html,

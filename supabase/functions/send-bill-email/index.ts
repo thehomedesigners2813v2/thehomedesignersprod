@@ -212,7 +212,7 @@ Deno.serve(async (req: Request) => {
           Authorization: `Bearer ${RESEND_API_KEY}`,
         },
         body: JSON.stringify({
-          from: "The Home Designers <orders@thehomedesigners.com>",
+          from: "The Home Designers <orders@thehomedesigners.in>",
           to: [payload.customerEmail],
           subject: `Bill ${payload.billNumber} - ${payload.projectName}`,
           html: emailBody,
@@ -237,7 +237,7 @@ Deno.serve(async (req: Request) => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        From: { Email: "orders@thehomedesigners.com", Name: "The Home Designers" },
+        From: { Email: "orders@thehomedesigners.in", Name: "The Home Designers" },
         To: [{ Email: payload.customerEmail, Name: payload.customerName || payload.customerEmail }],
         Subject: `Bill ${payload.billNumber} - ${payload.projectName}`,
         HTML: emailBody,

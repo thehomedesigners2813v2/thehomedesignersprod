@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
     }
 
     const localSupabase = !Deno.env.get("SUPABASE_URL")?.startsWith("https://");
-    const payLink = `${localSupabase ? "http://localhost:5173" : "https://thehomedesigners.com"}/my-bill/${bill.project_id}`;
+    const payLink = `${localSupabase ? "http://localhost:5173" : "https://thehomedesigners.in"}/my-bill/${bill.project_id}`;
     const html = `<!DOCTYPE html>
 <html><body style="font-family:Arial,sans-serif;color:#1f2937;line-height:1.5">
   <h2 style="color:#0f766e">Payment requested</h2>
