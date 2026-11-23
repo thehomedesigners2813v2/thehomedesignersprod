@@ -187,7 +187,11 @@ const DesignerAISubscription = () => {
                   <span className="text-sm text-primary-700"> credits/month</span>
                 </div>
                 <ul className="mt-4 flex-1 space-y-2 text-sm text-slate-700">
-                  {(plan.features || []).map((feature: string, i: number) => (
+                  <li className="flex items-start gap-2">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                    <span>{plan.monthly_credits} AI quotation credits per month</span>
+                  </li>
+                  {(plan.features || []).filter((feature: string) => !/credits per month/i.test(feature)).map((feature: string, i: number) => (
                     <li key={i} className="flex items-start gap-2">
                       <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
                       <span>{feature}</span>
