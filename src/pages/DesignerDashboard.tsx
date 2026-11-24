@@ -584,7 +584,7 @@ const DesignerDashboard = () => {
 
       // Fetch assigned projects
       const { data: projects, error: projectsError } = await supabase
-        .from('customers')
+        .from('designer_customer_projects')
         .select('*')
         .eq('assigned_designer_id', designer.id);
 

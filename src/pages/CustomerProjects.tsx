@@ -193,7 +193,7 @@ interface Quote {
       // This includes: assigned, pending, finalized, in_progress, completed
       console.log('Fetching assigned projects...');
       const { data: assignedData, error: assignedError } = await supabase
-        .from('customers')
+        .from('designer_customer_projects')
         .select('*')
         .eq('assigned_designer_id', designer.id)
         .neq('assignment_status', 'shared')
@@ -245,7 +245,7 @@ interface Quote {
       console.log('Fetching shared projects...');
       const [{ data: assignedShared, error: sharedError }, { data: shareRows, error: shareListError }] = await Promise.all([
         supabase
-          .from('customers')
+          .from('designer_customer_projects')
           .select('*')
           .eq('assigned_designer_id', designer.id)
           .eq('assignment_status', 'shared')
@@ -260,7 +260,7 @@ interface Quote {
       let extraShared: typeof assignedShared = [];
       if (extraIds.length > 0) {
         const { data: extraRows, error: extraError } = await supabase
-          .from('customers')
+          .from('designer_customer_projects')
           .select('*')
           .in('id', extraIds)
           .eq('assignment_status', 'shared');
@@ -669,18 +669,25 @@ interface Quote {
                         <User className="w-4 h-4" />
                         <span>{project.name}</span>
                       </div>
-                      <div className="flex items-center space-x-2 text-gray-600">
-                        <Mail className="w-4 h-4" />
-                        <a href={`mailto:${project.email}`} className="text-primary-600 hover:text-primary-700">
-                          {project.email}
-                        </a>
-                      </div>
-                      <div className="flex items-center space-x-2 text-gray-600">
-                        <Phone className="w-4 h-4" />
-                        <a href={`tel:${project.phone}`} className="text-primary-600 hover:text-primary-700">
-                          {project.phone}
-                        </a>
-                      </div>
+                      {project.email && (
+                        <div className="flex items-center space-x-2 text-gray-600">
+                          <Mail className="w-4 h-4" />
+                          <a href={`mailto:${project.email}`} className="text-primary-600 hover:text-primary-700">
+                            {project.email}
+                          </a>
+                        </div>
+                      )}
+                      {project.phone && (
+                        <div className="flex items-center space-x-2 text-gray-600">
+                          <Phone className="w-4 h-4" />
+                          <a href={`tel:${project.phone}`} className="text-primary-600 hover:text-primary-700">
+                            {project.phone}
+                          </a>
+                        </div>
+                      )}
+                      {!project.email && !project.phone && (
+                        <p className="text-xs text-amber-700">Phone and email are shared after the customer confirms a quotation with the 10% payment.</p>
+                      )}
                     </div>
                   </div>
 
@@ -900,18 +907,25 @@ interface Quote {
                         <User className="w-4 h-4" />
                         <span>{share.project.name}</span>
                       </div>
-                      <div className="flex items-center space-x-2 text-gray-600">
-                        <Mail className="w-4 h-4" />
-                        <a href={`mailto:${share.project.email}`} className="text-primary-600 hover:text-primary-700">
-                          {share.project.email}
-                        </a>
-                      </div>
-                      <div className="flex items-center space-x-2 text-gray-600">
-                        <Phone className="w-4 h-4" />
-                        <a href={`tel:${share.project.phone}`} className="text-primary-600 hover:text-primary-700">
-                          {share.project.phone}
-                        </a>
-                      </div>
+                      {share.project.email && (
+                        <div className="flex items-center space-x-2 text-gray-600">
+                          <Mail className="w-4 h-4" />
+                          <a href={`mailto:${share.project.email}`} className="text-primary-600 hover:text-primary-700">
+                            {share.project.email}
+                          </a>
+                        </div>
+                      )}
+                      {share.project.phone && (
+                        <div className="flex items-center space-x-2 text-gray-600">
+                          <Phone className="w-4 h-4" />
+                          <a href={`tel:${share.project.phone}`} className="text-primary-600 hover:text-primary-700">
+                            {share.project.phone}
+                          </a>
+                        </div>
+                      )}
+                      {!share.project.email && !share.project.phone && (
+                        <p className="text-xs text-amber-700">Phone and email are shared after the customer confirms a quotation with the 10% payment.</p>
+                      )}
                     </div>
 
                     {share.message && (
@@ -1030,20 +1044,24 @@ interface Quote {
                           <span className="text-xs">Bill</span>
                         </button>
                       )}
-                      <a
-                        href={`mailto:${share.project.email}?subject=Regarding your ${share.project.project_name} project&body=Hi ${share.project.name},%0D%0A%0D%0AThank you for sharing your project details with me. I would love to discuss your ${share.project.project_name} project further.%0D%0A%0D%0ABest regards,%0D%0A${designer.name}`}
-                        className="bg-green-500 hover:bg-green-600 text-white py-2 px-3 rounded-lg font-medium transition-colors flex items-center justify-center"
-                        title="Contact Customer"
-                      >
-                        <Mail className="w-4 h-4" />
-                      </a>
-                      <a
-                        href={`tel:${share.project.phone}`}
-                        className="bg-secondary-500 hover:bg-secondary-600 text-white py-2 px-3 rounded-lg font-medium transition-colors"
-                        title="Call Customer"
-                      >
-                        <Phone className="w-4 h-4" />
-                      </a>
+                      {share.project.email && (
+                        <a
+                          href={`mailto:${share.project.email}?subject=Regarding your ${share.project.project_name} project&body=Hi ${share.project.name},%0D%0A%0D%0AThank you for sharing your project details with me. I would love to discuss your ${share.project.project_name} project further.%0D%0A%0D%0ABest regards,%0D%0A${designer.name}`}
+                          className="bg-green-500 hover:bg-green-600 text-white py-2 px-3 rounded-lg font-medium transition-colors flex items-center justify-center"
+                          title="Contact Customer"
+                        >
+                          <Mail className="w-4 h-4" />
+                        </a>
+                      )}
+                      {share.project.phone && (
+                        <a
+                          href={`tel:${share.project.phone}`}
+                          className="bg-secondary-500 hover:bg-secondary-600 text-white py-2 px-3 rounded-lg font-medium transition-colors"
+                          title="Call Customer"
+                        >
+                          <Phone className="w-4 h-4" />
+                        </a>
+                      )}
                     </div>
                   </div>
                 </div>

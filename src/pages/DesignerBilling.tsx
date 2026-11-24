@@ -161,7 +161,7 @@ const DesignerBilling = () => {
       setError(null);
 
       const { data: projectData, error: projectError } = await supabase
-        .from('customers')
+        .from('designer_customer_projects')
         .select('id, name, email, phone, location, project_name, property_type, project_area')
         .eq('id', projectId)
         .maybeSingle();

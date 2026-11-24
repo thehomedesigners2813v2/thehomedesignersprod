@@ -62,21 +62,37 @@ const ProjectDetailWithTracking = () => {
       setLoading(true);
       setError(null);
 
-      // Build query that works with RLS policies
-      let query = supabase
-        .from('customers')
-        .select(`
-          *,
-          assigned_designer:designers(id, name, email, phone, specialization)
-        `)
-        .eq('id', id);
+      let data: Customer | null = null;
+      let error: { message: string } | null = null;
 
-      // The RLS policies will automatically filter based on:
-      // 1. user_id = uid() for customers
-      // 2. assigned_designer_id matching the designer's ID for designers
-      // So we don't need to add additional filters here
-
-      const { data, error } = await query.maybeSingle();
+      if (isDesigner) {
+        const result = await supabase
+          .from('designer_customer_projects')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
+        data = result.data;
+        error = result.error;
+        if (data?.assigned_designer_id) {
+          const { data: assignedDesigner } = await supabase
+            .from('designers')
+            .select('id, name, email, phone, specialization')
+            .eq('id', data.assigned_designer_id)
+            .maybeSingle();
+          if (assignedDesigner) data = { ...data, assigned_designer: assignedDesigner } as Customer;
+        }
+      } else {
+        const result = await supabase
+          .from('customers')
+          .select(`
+            *,
+            assigned_designer:designers(id, name, email, phone, specialization)
+          `)
+          .eq('id', id)
+          .maybeSingle();
+        data = result.data;
+        error = result.error;
+      }
 
       if (error) {
         console.error('Database error:', error);
@@ -506,14 +522,21 @@ const ProjectDetailWithTracking = () => {
                         <p className="text-sm font-medium text-gray-700">Customer Name</p>
                         <p className="text-gray-600">{project.name}</p>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">Email</p>
-                        <p className="text-gray-600">{project.email}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">Phone</p>
-                        <p className="text-gray-600">{project.phone}</p>
-                      </div>
+                      {project.email && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-700">Email</p>
+                          <p className="text-gray-600">{project.email}</p>
+                        </div>
+                      )}
+                      {project.phone && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-700">Phone</p>
+                          <p className="text-gray-600">{project.phone}</p>
+                        </div>
+                      )}
+                      {!project.email && !project.phone && (
+                        <p className="text-sm text-amber-700">Phone and email are shared after the customer confirms a quotation with the 10% payment.</p>
+                      )}
                     </div>
                   </div>
                 </div>

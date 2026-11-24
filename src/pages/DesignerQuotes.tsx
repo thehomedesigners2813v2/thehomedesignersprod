@@ -129,15 +129,29 @@ const DesignerQuotes = () => {
         .from('designer_quotes')
         .select(`
           *,
-          project:customers!designer_quotes_project_id_fkey(project_name, name, email, phone, property_type),
           items_count:quote_items(count)
         `)
         .eq('designer_id', designer.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
-      setQuotes(data || []);
+
+      const projectIds = [...new Set((data || []).map((quote: { project_id?: string | null }) => quote.project_id).filter((id): id is string => Boolean(id)))];
+      const projectsById: Record<string, Quote['project']> = {};
+      if (projectIds.length > 0) {
+        const { data: projects } = await supabase
+          .from('designer_customer_projects')
+          .select('id, project_name, name, email, phone, property_type')
+          .in('id', projectIds);
+        (projects || []).forEach((project) => {
+          projectsById[project.id] = project;
+        });
+      }
+
+      setQuotes((data || []).map((quote) => ({
+        ...quote,
+        project: quote.project_id ? projectsById[quote.project_id] || null : null,
+      })));
 
       // Fetch change requests and unread message counts for these quotes
       const quoteIds = (data || []).map((q: any) => q.id);
@@ -667,33 +681,53 @@ const DesignerQuotes = () => {
           />
         )}
 
-        {selectedQuote.status === 'accepted' && selectedQuote.project && (
+        {selectedQuote.quote_type === 'offline' && (selectedQuote.customer_email || selectedQuote.customer_phone) && (
+          <div className="mb-6 bg-green-50 border border-green-200 rounded-xl p-5">
+            <h4 className="font-semibold text-green-800 mb-3">Walk-in customer</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {selectedQuote.customer_email && <p className="text-sm text-green-800">{selectedQuote.customer_email}</p>}
+              {selectedQuote.customer_phone && <p className="text-sm text-green-800">{selectedQuote.customer_phone}</p>}
+            </div>
+          </div>
+        )}
+
+        {selectedQuote.project_id && selectedQuote.project && (selectedQuote.project.email || selectedQuote.project.phone) && (
           <div className="mb-6 bg-green-50 border border-green-200 rounded-xl p-5">
             <h4 className="font-semibold text-green-800 mb-3 flex items-center space-x-2">
               <CheckCircle className="w-5 h-5" />
               <span>Customer Contact Details</span>
             </h4>
-            <p className="text-sm text-green-700 mb-3">Quote accepted - you can now contact the customer directly.</p>
+            <p className="text-sm text-green-700 mb-3">The customer confirmed this quotation with the 10% payment.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center space-x-3 bg-white rounded-lg p-3 border border-green-100">
-                <Mail className="w-5 h-5 text-green-600" />
-                <div>
-                  <p className="text-xs text-gray-500">Email</p>
-                  <a href={`mailto:${selectedQuote.project.email}`} className="text-sm font-medium text-green-700 hover:underline">
-                    {selectedQuote.project.email}
-                  </a>
+              {selectedQuote.project.email && (
+                <div className="flex items-center space-x-3 bg-white rounded-lg p-3 border border-green-100">
+                  <Mail className="w-5 h-5 text-green-600" />
+                  <div>
+                    <p className="text-xs text-gray-500">Email</p>
+                    <a href={`mailto:${selectedQuote.project.email}`} className="text-sm font-medium text-green-700 hover:underline">
+                      {selectedQuote.project.email}
+                    </a>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center space-x-3 bg-white rounded-lg p-3 border border-green-100">
-                <Phone className="w-5 h-5 text-green-600" />
-                <div>
-                  <p className="text-xs text-gray-500">Phone</p>
-                  <a href={`tel:${selectedQuote.project.phone}`} className="text-sm font-medium text-green-700 hover:underline">
-                    {selectedQuote.project.phone}
-                  </a>
+              )}
+              {selectedQuote.project.phone && (
+                <div className="flex items-center space-x-3 bg-white rounded-lg p-3 border border-green-100">
+                  <Phone className="w-5 h-5 text-green-600" />
+                  <div>
+                    <p className="text-xs text-gray-500">Phone</p>
+                    <a href={`tel:${selectedQuote.project.phone}`} className="text-sm font-medium text-green-700 hover:underline">
+                      {selectedQuote.project.phone}
+                    </a>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
+          </div>
+        )}
+
+        {selectedQuote.project_id && selectedQuote.project && !selectedQuote.project.email && !selectedQuote.project.phone && (
+          <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
+            Only the customer name and property details are available. Phone and email are shared after the customer confirms this quotation with the 10% payment.
           </div>
         )}
 

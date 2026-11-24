@@ -98,7 +98,7 @@ export default function DesignerProfileManager() {
   useEffect(() => {
     if (!designer) return;
     supabase
-      .from('customers')
+      .from('designer_customer_projects')
       .select('id, project_name, property_type, location, updated_at, work_end_date, layout_image_url')
       .eq('assigned_designer_id', designer.id)
       .eq('assignment_status', 'completed')

@@ -75,7 +75,7 @@ const AIQuotationAssistant = () => {
 
   useEffect(() => {
     if (!projectId) return;
-    void supabase.from('customers').select('id, name, email, phone, location, project_name').eq('id', projectId).maybeSingle().then(({ data }) => {
+    void supabase.from('designer_customer_projects').select('id, name, location, project_name').eq('id', projectId).maybeSingle().then(({ data }) => {
       const next = data as Customer | null;
       setCustomer(next);
       if (next?.project_name) setTitle(current => current === 'Interior Quotation' ? `${next.project_name} Interior Quote` : current);

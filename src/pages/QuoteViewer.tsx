@@ -138,6 +138,16 @@ const QuoteViewer = () => {
 
       if (quoteError) throw quoteError;
 
+      let project = quoteData.project;
+      if (!project && quoteData.project_id) {
+        const { data: maskedProject } = await supabase
+          .from('designer_customer_projects')
+          .select('name, email, phone, location, property_type, project_name')
+          .eq('id', quoteData.project_id)
+          .maybeSingle();
+        project = maskedProject;
+      }
+
       const { data: itemsData, error: itemsError } = await supabase
         .from('quote_items')
         .select('*')
@@ -148,6 +158,7 @@ const QuoteViewer = () => {
 
       setQuote({
         ...quoteData,
+        project: project || quoteData.project,
         items: itemsData || []
       });
     } catch (error: any) {
@@ -447,14 +458,21 @@ const QuoteViewer = () => {
                 <p className="text-sm text-gray-500">Project</p>
                 <p className="font-medium text-gray-800">{quote.project.project_name}</p>
               </div>
-              <div>
-                <p className="text-sm text-gray-500">Email</p>
-                <p className="font-medium text-gray-800">{quote.project.email}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Phone</p>
-                <p className="font-medium text-gray-800">{quote.project.phone}</p>
-              </div>
+              {quote.project.email && (
+                <div>
+                  <p className="text-sm text-gray-500">Email</p>
+                  <p className="font-medium text-gray-800">{quote.project.email}</p>
+                </div>
+              )}
+              {quote.project.phone && (
+                <div>
+                  <p className="text-sm text-gray-500">Phone</p>
+                  <p className="font-medium text-gray-800">{quote.project.phone}</p>
+                </div>
+              )}
+              {!quote.project.email && !quote.project.phone && (
+                <p className="text-sm text-amber-700 md:col-span-2">Phone and email are shared after the customer confirms this quotation with the 10% payment.</p>
+              )}
               <div>
                 <p className="text-sm text-gray-500">Location</p>
                 <p className="font-medium text-gray-800">{quote.project.location}</p>
