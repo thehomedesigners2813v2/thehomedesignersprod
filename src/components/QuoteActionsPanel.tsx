@@ -215,7 +215,7 @@ const QuoteActionsPanel: React.FC<QuoteActionsPanelProps> = ({ quote, onRefresh 
           <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
           <div>
             <p className="font-medium text-amber-800">Payment Pending Verification</p>
-            <p className="text-sm text-amber-700">Your transfer proof was received. The quotation stays unaccepted until the designer or an administrator confirms the payment.</p>
+            <p className="text-sm text-amber-700">Your transfer proof was received. The quotation stays unaccepted until the payment is confirmed. A NEFT or RTGS transfer is confirmed by your designer.</p>
           </div>
         </div>
       );
@@ -361,7 +361,7 @@ const QuoteActionsPanel: React.FC<QuoteActionsPanelProps> = ({ quote, onRefresh 
             )}
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-700 flex items-start space-x-2">
               <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              <span>The quotation is not accepted until this {percentLabel}% confirmation payment is verified. Closing this window, cancelling, or a failed payment leaves the quotation unchanged. Card and net-banking payments are verified by the payment provider. A UPI transfer stays pending until the designer or an administrator confirms the receipt.</span>
+              <span>The quotation is not accepted until this {percentLabel}% confirmation payment is verified. Closing this window, cancelling, or a failed payment leaves the quotation unchanged. Card and net-banking payments through Razorpay are confirmed automatically, and settlement takes about 2 days. A UPI transfer stays pending until it is confirmed. NEFT or RTGS is confirmed by your designer after you upload the receipt and UTR.</span>
             </div>
             <div className="flex gap-3 pt-2">
               <button onClick={closeAll} disabled={accepting} className="flex-1 bg-gray-200 text-gray-800 py-2.5 rounded-lg font-medium hover:bg-gray-300 transition-colors disabled:opacity-50">Cancel</button>

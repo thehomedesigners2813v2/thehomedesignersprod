@@ -54,8 +54,8 @@ Deno.serve(async (req) => {
     if (action === "create") {
       return await createPayment(admin, userId, body);
     }
-    if (action === "submit_upi") {
-      return await submitUpi(admin, userId, body);
+    if (action === "submit_upi" || action === "submit_bank") {
+      return await submitTransfer(admin, userId, body);
     }
     if (action === "verify_razorpay") {
       return await verifyRazorpay(admin, userId, body);
@@ -164,8 +164,11 @@ async function createPayment(admin: Admin, userId: string, body: any) {
   const purpose = body?.purpose;
   const referenceId = body?.referenceId;
   const method = body?.method;
-  if (!PURPOSES.includes(purpose) || !UUID_RE.test(String(referenceId)) || !["razorpay", "upi"].includes(method)) {
+  if (!PURPOSES.includes(purpose) || !UUID_RE.test(String(referenceId)) || !["razorpay", "upi", "bank"].includes(method)) {
     return json({ error: "Invalid payment request." }, 400);
+  }
+  if (method === "bank" && purpose !== "quote_advance" && purpose !== "project_payment") {
+    return json({ error: "Bank transfer is only available for a designer payment." }, 400);
   }
 
   let resolved;
@@ -192,6 +195,23 @@ async function createPayment(admin: Admin, userId: string, body: any) {
 
   let razorpayOrderId: string | null = null;
   let razorpayResponse: { orderId: string; keyId: string; amount: number; currency: string } | null = null;
+  let bankResponse: { accountHolder: string; accountNumber: string; ifsc: string } | null = null;
+
+  if (method === "bank") {
+    if (!resolved.designerId) return json({ error: "This payment is not linked to a designer." }, 400);
+    const { data: designer } = await admin
+      .from("designer_bank_accounts")
+      .select("account_holder, account_number, ifsc")
+      .eq("designer_id", resolved.designerId)
+      .maybeSingle();
+    const holder = String(designer?.account_holder || "").trim();
+    const accountNumber = String(designer?.account_number || "").trim();
+    const ifsc = String(designer?.ifsc || "").trim().toUpperCase();
+    if (!holder || !/^\d{9,18}$/.test(accountNumber) || !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) {
+      return json({ error: "This designer has not added bank details yet. Please pay by Razorpay or UPI." }, 400);
+    }
+    bankResponse = { accountHolder: holder, accountNumber, ifsc };
+  }
 
   if (method === "razorpay") {
     const keyId = Deno.env.get("RAZORPAY_KEY_ID");
@@ -244,6 +264,7 @@ async function createPayment(admin: Admin, userId: string, body: any) {
     totalAmount: total,
     razorpay: razorpayResponse,
     upi: method === "upi" ? { upiId: UPI_ID, payeeName: UPI_PAYEE } : null,
+    bank: bankResponse,
   });
 }
 
@@ -258,20 +279,29 @@ async function loadOwnedOrder(admin: Admin, userId: string, paymentOrderId: unkn
   return data;
 }
 
-async function submitUpi(admin: Admin, userId: string, body: any) {
+async function submitTransfer(admin: Admin, userId: string, body: any) {
   const order = await loadOwnedOrder(admin, userId, body?.paymentOrderId);
   if (!order) return json({ error: "Payment not found." }, 404);
-  if (order.method !== "upi") return json({ error: "This payment is not a UPI payment." }, 400);
+  if (order.method !== "upi" && order.method !== "bank") {
+    return json({ error: "This payment is not a transfer." }, 400);
+  }
   if (order.status !== "pending" && order.status !== "rejected") {
     return json({ error: "This payment has already been submitted." }, 400);
   }
 
   const transactionId = String(body?.transactionId || "").trim();
   if (!TXN_RE.test(transactionId)) {
-    return json({ error: "Enter the UPI transaction ID (6 to 30 letters or numbers)." }, 400);
+    return json({
+      error: order.method === "bank"
+        ? "Enter the UTR number (6 to 30 letters or numbers)."
+        : "Enter the UPI transaction ID (6 to 30 letters or numbers).",
+    }, 400);
   }
 
   const screenshotPath = body?.screenshotPath ? String(body.screenshotPath) : null;
+  if (order.method === "bank" && !screenshotPath) {
+    return json({ error: "Upload the payment screenshot." }, 400);
+  }
   if (screenshotPath && !screenshotPath.startsWith(`${userId}/`)) {
     return json({ error: "Invalid screenshot upload." }, 400);
   }
@@ -286,11 +316,15 @@ async function submitUpi(admin: Admin, userId: string, body: any) {
       updated_at: new Date().toISOString(),
     })
     .eq("id", order.id)
-    .select("purpose, designer_id, reference_id")
+    .select("purpose, designer_id, reference_id, method")
     .single();
   if (error) {
     if (error.code === "23505") {
-      return json({ error: "This UPI transaction ID has already been submitted." }, 409);
+      return json({
+        error: order.method === "bank"
+          ? "This UTR number has already been submitted."
+          : "This UPI transaction ID has already been submitted.",
+      }, 409);
     }
     throw error;
   }
@@ -323,7 +357,9 @@ async function submitUpi(admin: Admin, userId: string, body: any) {
         p_user_id: designer.user_id,
         p_user_type: "designer",
         p_title: updated.purpose === "project_payment" ? "Project payment awaiting review" : "Confirmation payment awaiting review",
-        p_message: updated.purpose === "project_payment"
+        p_message: updated.method === "bank"
+          ? "A homeowner uploaded a NEFT or RTGS receipt and UTR. Confirm the credit in your bank account."
+          : updated.purpose === "project_payment"
           ? "A homeowner uploaded proof of a project payment. Confirm receipt to apply it to the bill."
           : "A homeowner uploaded proof of the quotation confirmation payment. Confirm receipt before the quotation can be accepted.",
         p_type: "payment_pending_verification",

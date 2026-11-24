@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 
 export type PaymentPurpose = 'designer_subscription' | 'ai_subscription' | 'wallpaper_order' | 'quote_advance' | 'project_payment';
-export type PaymentMethod = 'razorpay' | 'upi';
+export type PaymentMethod = 'razorpay' | 'upi' | 'bank';
 
 export interface CreatedPayment {
   paymentOrderId: string;
@@ -11,6 +11,7 @@ export interface CreatedPayment {
   totalAmount: number;
   razorpay: { orderId: string; keyId: string; amount: number; currency: string } | null;
   upi: { upiId: string; payeeName: string } | null;
+  bank: { accountHolder: string; accountNumber: string; ifsc: string } | null;
 }
 
 const FALLBACK_ERROR = 'Something went wrong. Please try again.';

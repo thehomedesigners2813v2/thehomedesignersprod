@@ -16,6 +16,7 @@ import {
   type CustomEntry
 } from '../lib/designerCatalog';
 import { DESIGNER_CITIES, sublocationsFor } from '../lib/designerLocations';
+import { bankDetailError, normalizeBankDetails } from '../lib/bankDetails';
 
 const DesignerRegistration = () => {
   const navigate = useNavigate();
@@ -54,7 +55,10 @@ const DesignerRegistration = () => {
     profile_image: '',
     business_type: '' as '' | 'google_location' | 'virtual',
     google_location_url: '',
-    awards: ['']
+    awards: [''],
+    bank_account_holder: '',
+    bank_account_number: '',
+    bank_ifsc: '',
   });
   const [serviceIds, setServiceIds] = useState<string[]>([]);
   const [customServices, setCustomServices] = useState<CustomEntry[]>([]);
@@ -78,6 +82,7 @@ const DesignerRegistration = () => {
   const locations = [...DESIGNER_CITIES];
 
   useEffect(() => {
+    void (async () => {
     if (authLoading) return;
 
     if (isEditMode) {
@@ -111,8 +116,24 @@ const DesignerRegistration = () => {
           profile_image: designer.profile_image || '',
           business_type: (designer.business_type as '' | 'google_location' | 'virtual') || '',
           google_location_url: designer.google_location_url || '',
-          awards: designer.awards && designer.awards.length > 0 ? designer.awards : ['']
+          awards: designer.awards && designer.awards.length > 0 ? designer.awards : [''],
+          bank_account_holder: '',
+          bank_account_number: '',
+          bank_ifsc: '',
         });
+        const { data: bankAccount } = await supabase
+          .from('designer_bank_accounts')
+          .select('account_holder, account_number, ifsc')
+          .eq('designer_id', designer.id)
+          .maybeSingle();
+        if (bankAccount) {
+          setFormData((current) => ({
+            ...current,
+            bank_account_holder: bankAccount.account_holder,
+            bank_account_number: bankAccount.account_number,
+            bank_ifsc: bankAccount.ifsc,
+          }));
+        }
         const savedServices = decodeSelection(designer.services, SERVICE_CATALOG);
         const savedMaterials = decodeSelection(designer.materials_expertise, MATERIAL_CATALOG);
         setServiceIds(savedServices.ids);
@@ -131,6 +152,7 @@ const DesignerRegistration = () => {
         setFormInitialized(true);
       }
     }
+    })();
   }, [user, designer, authLoading, designerLoading, navigate, isEditMode, formInitialized]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -466,6 +488,11 @@ const DesignerRegistration = () => {
       setError('Select an area within your city');
       return false;
     }
+    const bankError = bankDetailError(formData.bank_account_holder, formData.bank_account_number, formData.bank_ifsc);
+    if (bankError) {
+      setError(bankError);
+      return false;
+    }
     return true;
   };
 
@@ -506,8 +533,9 @@ const DesignerRegistration = () => {
         profile_image: profileImageUrl,
         business_type: formData.business_type || null,
         google_location_url: formData.business_type === 'google_location' ? formData.google_location_url.trim() : null,
-        awards: formData.awards.filter(a => a.trim() !== '')
+        awards: formData.awards.filter(a => a.trim() !== ''),
       };
+      const bankDetails = normalizeBankDetails(formData.bank_account_holder, formData.bank_account_number, formData.bank_ifsc);
 
       if (isEditMode && designer) {
         const savedServices = encodeSelection(serviceIds, await resolveCatalogEntries(customServices, designer.user_id, true));
@@ -517,6 +545,14 @@ const DesignerRegistration = () => {
         if (result.error) {
           throw new Error(result.error);
         }
+        const { error: bankError } = await supabase.from('designer_bank_accounts').upsert({
+          designer_id: designer.id,
+          account_holder: bankDetails.bank_account_holder,
+          account_number: bankDetails.bank_account_number,
+          ifsc: bankDetails.bank_ifsc,
+          updated_at: new Date().toISOString(),
+        });
+        if (bankError) throw new Error(bankError.message);
 
         setSuccess('Profile updated successfully!');
 
@@ -590,6 +626,9 @@ const DesignerRegistration = () => {
             p_services: savedServices,
             p_materials_expertise: savedMaterials,
             p_awards: cleanedData.awards,
+            p_bank_account_holder: bankDetails.bank_account_holder,
+            p_bank_account_number: bankDetails.bank_account_number,
+            p_bank_ifsc: bankDetails.bank_ifsc,
           }
         );
 
@@ -897,6 +936,60 @@ const DesignerRegistration = () => {
                         {10 - formData.phone.length} more digit{10 - formData.phone.length !== 1 ? 's' : ''} required
                       </p>
                     )}
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <h3 className="text-sm font-semibold text-gray-800">Bank account for customer payments</h3>
+                    <p className="mt-1 text-xs text-gray-500">Customers paying by NEFT or RTGS will see these details. They are not shown on your public profile.</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Account holder name *
+                    </label>
+                    <input
+                      type="text"
+                      name="bank_account_holder"
+                      value={formData.bank_account_holder}
+                      onChange={handleInputChange}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      placeholder="Name on the bank account"
+                      maxLength={80}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Account number *
+                    </label>
+                    <input
+                      type="text"
+                      name="bank_account_number"
+                      value={formData.bank_account_number}
+                      onChange={handleInputChange}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      placeholder="9 to 18 digits"
+                      inputMode="numeric"
+                      maxLength={18}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      IFSC code *
+                    </label>
+                    <input
+                      type="text"
+                      name="bank_ifsc"
+                      value={formData.bank_ifsc}
+                      onChange={handleInputChange}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 uppercase focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      placeholder="HDFC0001234"
+                      maxLength={11}
+                      required
+                    />
                   </div>
 
                   <div>

@@ -15,8 +15,9 @@ import {
   encodeSelection
 } from '../lib/designerCatalog';
 import { DESIGNER_CITIES, sublocationsFor } from '../lib/designerLocations';
+import { bankDetailError, normalizeBankDetails } from '../lib/bankDetails';
 
-type Section = 'overview' | 'basic' | 'about' | 'services' | 'materials' | 'portfolio' | 'reviews' | 'preview';
+type Section = 'overview' | 'basic' | 'about' | 'services' | 'materials' | 'portfolio' | 'reviews' | 'bank' | 'preview';
 
 type PortfolioProject = {
   id: string;
@@ -36,6 +37,7 @@ const sections: { id: Section; label: string }[] = [
   { id: 'materials', label: 'Materials Expertise' },
   { id: 'portfolio', label: 'Portfolio / Projects' },
   { id: 'reviews', label: 'Reviews' },
+  { id: 'bank', label: 'Bank account' },
   { id: 'preview', label: 'Preview Profile' }
 ];
 
@@ -48,6 +50,7 @@ export default function DesignerProfileManager() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [basic, setBasic] = useState({ name: '', specialization: '', location: '', sublocation: '', profile_image: '' });
+  const [bank, setBank] = useState({ bank_account_holder: '', bank_account_number: '', bank_ifsc: '' });
   const [about, setAbout] = useState({ experience: '', bio: '' });
   const [serviceIds, setServiceIds] = useState<string[]>([]);
   const [customServices, setCustomServices] = useState<{ name: string; imageUrl?: string }[]>([]);
@@ -68,6 +71,19 @@ export default function DesignerProfileManager() {
       sublocation: designer.sublocation || '',
       profile_image: designer.profile_image || ''
     });
+    supabase
+      .from('designer_bank_accounts')
+      .select('account_holder, account_number, ifsc')
+      .eq('designer_id', designer.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) return;
+        setBank({
+          bank_account_holder: data.account_holder,
+          bank_account_number: data.account_number,
+          bank_ifsc: data.ifsc,
+        });
+      });
     setAbout({ experience: String(designer.experience ?? ''), bio: designer.bio || '' });
     setIntroVideoId(designer.intro_youtube_id || null);
     setIntroVideoUrl(designer.intro_video_url || null);
@@ -272,6 +288,42 @@ export default function DesignerProfileManager() {
               </label>
               {basic.profile_image && <img src={basic.profile_image} alt="" className="h-24 w-24 rounded-full object-cover" />}
               <button disabled={saving} className="rounded-lg bg-[#D96C4D] px-4 py-2 text-white">{saving ? 'Saving...' : 'Save'}</button>
+            </form>
+          )}
+
+          {section === 'bank' && (
+            <form
+              className="space-y-4"
+              onSubmit={async (event) => {
+                event.preventDefault();
+                const invalid = bankDetailError(bank.bank_account_holder, bank.bank_account_number, bank.bank_ifsc);
+                if (invalid) {
+                  setError(invalid);
+                  setMessage(null);
+                  return;
+                }
+                const details = normalizeBankDetails(bank.bank_account_holder, bank.bank_account_number, bank.bank_ifsc);
+                setSaving(true);
+                setError(null);
+                setMessage(null);
+                const { error: bankError } = await supabase.from('designer_bank_accounts').upsert({
+                  designer_id: designer.id,
+                  account_holder: details.bank_account_holder,
+                  account_number: details.bank_account_number,
+                  ifsc: details.bank_ifsc,
+                  updated_at: new Date().toISOString(),
+                });
+                setSaving(false);
+                if (bankError) setError(bankError.message);
+                else setMessage('Bank account saved.');
+              }}
+            >
+              <h1 className="text-2xl font-semibold">Bank account</h1>
+              <p className="text-sm text-gray-600">Customers who pay a quotation or project bill by NEFT or RTGS will see this account. It is not shown on your public profile.</p>
+              <input className="w-full rounded-lg border px-3 py-2" value={bank.bank_account_holder} onChange={(event) => setBank({ ...bank, bank_account_holder: event.target.value })} placeholder="Account holder name" maxLength={80} required />
+              <input className="w-full rounded-lg border px-3 py-2" value={bank.bank_account_number} onChange={(event) => setBank({ ...bank, bank_account_number: event.target.value.replace(/\D/g, '').slice(0, 18) })} placeholder="Account number" inputMode="numeric" required />
+              <input className="w-full rounded-lg border px-3 py-2 uppercase" value={bank.bank_ifsc} onChange={(event) => setBank({ ...bank, bank_ifsc: event.target.value.toUpperCase().slice(0, 11) })} placeholder="IFSC code" required />
+              <button disabled={saving} className="rounded-lg bg-[#D96C4D] px-4 py-2 text-white">{saving ? 'Saving...' : 'Save bank account'}</button>
             </form>
           )}
 

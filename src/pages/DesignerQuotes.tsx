@@ -6,6 +6,7 @@ import { useDesignerProfile } from '../hooks/useDesignerProfile';
 import { supabase } from '../lib/supabase';
 import { downloadFileFromStorage } from '../utils/downloadFile';
 import QuoteMessagingPanel from '../components/QuoteMessagingPanel';
+import BankTransferReview from '../components/payments/BankTransferReview';
 
 interface Quote {
   id: string;
@@ -66,12 +67,31 @@ const DesignerQuotes = () => {
   const [showMessages, setShowMessages] = useState(false);
   const [changeRequests, setChangeRequests] = useState<Record<string, any[]>>({});
   const [unreadMessages, setUnreadMessages] = useState<Record<string, number>>({});
+  const [bankProof, setBankProof] = useState<{ id: string; base_amount: number; upi_transaction_id: string | null; upi_screenshot_path: string | null } | null>(null);
 
   useEffect(() => {
     if (!designerLoading && designer) {
       fetchQuotes();
     }
   }, [designer, designerLoading]);
+
+  useEffect(() => {
+    if (!selectedQuote) {
+      setBankProof(null);
+      return;
+    }
+    supabase
+      .from('payment_orders')
+      .select('id, base_amount, upi_transaction_id, upi_screenshot_path')
+      .eq('purpose', 'quote_advance')
+      .eq('reference_id', selectedQuote.id)
+      .eq('method', 'bank')
+      .eq('status', 'awaiting_review')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => setBankProof(data));
+  }, [selectedQuote]);
 
   // Realtime: refresh quotes when the designer_quotes table changes
   useEffect(() => {
@@ -632,6 +652,19 @@ const DesignerQuotes = () => {
               </div>
             ))}
           </div>
+        )}
+
+        {bankProof && (
+          <BankTransferReview
+            paymentOrderId={bankProof.id}
+            amount={Number(bankProof.base_amount)}
+            utr={bankProof.upi_transaction_id}
+            screenshotPath={bankProof.upi_screenshot_path}
+            onDecided={(action) => {
+              setBankProof(null);
+              setSuccess(action === 'approve' ? 'Bank transfer confirmed.' : 'Bank transfer rejected. The customer can submit it again.');
+            }}
+          />
         )}
 
         {selectedQuote.status === 'accepted' && selectedQuote.project && (

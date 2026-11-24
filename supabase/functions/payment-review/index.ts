@@ -52,12 +52,18 @@ Deno.serve(async (req) => {
       .eq("id", paymentOrderId)
       .maybeSingle();
     if (!order) return json({ error: "Payment not found." }, 404);
-    if (order.method !== "upi" || order.status !== "awaiting_review") {
-      return json({ error: "Only UPI payments awaiting review can be decided." }, 400);
+    if ((order.method !== "upi" && order.method !== "bank") || order.status !== "awaiting_review") {
+      return json({ error: "Only a transfer awaiting review can be decided." }, 400);
     }
-    const designerCanReview = order.purpose === "quote_advance" || order.purpose === "project_payment";
-    if (!adminRow && (!designerCanReview || order.designer_id !== designer?.id)) {
-      return json({ error: "You can only confirm a payment for your own project." }, 403);
+    if (order.method === "bank") {
+      if (!designer || order.designer_id !== designer.id) {
+        return json({ error: "Only the designer who owns this payment can confirm the bank transfer." }, 403);
+      }
+    } else {
+      const designerCanReview = order.purpose === "quote_advance" || order.purpose === "project_payment";
+      if (!adminRow && (!designerCanReview || order.designer_id !== designer?.id)) {
+        return json({ error: "You can only confirm a payment for your own project." }, 403);
+      }
     }
 
     const reviewer = { reviewed_by: userData.user.id, reviewed_at: new Date().toISOString(), review_note: note };

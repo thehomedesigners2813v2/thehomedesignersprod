@@ -3,14 +3,17 @@ import { X, Send, AlertCircle, CheckCircle, ChevronDown, Check } from 'lucide-re
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import type { Customer } from '../lib/supabase';
+import { formatDesignerArea } from '../lib/designerLocations';
 
 interface Designer {
   id: string;
   name: string;
   email: string;
   location: string;
+  sublocation?: string | null;
   profile_image: string | null;
   specialization: string;
+  user_id?: string | null;
 }
 
 interface SendToDesignerModalProps {
@@ -51,7 +54,7 @@ const SendToDesignerModal: React.FC<SendToDesignerModalProps> = ({ isOpen, onClo
       if (!quotes || quotes.length === 0) {
         const { data, error } = await supabase
           .from('designers')
-          .select('id, name, email, location, profile_image, specialization')
+          .select('id, name, email, location, sublocation, profile_image, specialization, user_id')
           .eq('is_active', true)
           .eq('verification_status', 'verified')
           .order('name');
@@ -65,7 +68,7 @@ const SendToDesignerModal: React.FC<SendToDesignerModalProps> = ({ isOpen, onClo
         // Fetch only those designers
         const { data, error } = await supabase
           .from('designers')
-          .select('id, name, email, location, profile_image, specialization')
+          .select('id, name, email, location, sublocation, profile_image, specialization, user_id')
           .in('id', designerIds)
           .eq('is_active', true)
           .neq('verification_status', 'rejected')
@@ -83,9 +86,11 @@ const SendToDesignerModal: React.FC<SendToDesignerModalProps> = ({ isOpen, onClo
   };
 
   const toggleDesignerSelection = (designer: Designer) => {
-    // For assignment, only allow single selection
-    setSelectedDesigners([designer]);
-    setIsDropdownOpen(false);
+    setSelectedDesigners((current) => (
+      current.some((item) => item.id === designer.id)
+        ? current.filter((item) => item.id !== designer.id)
+        : [...current, designer]
+    ));
     if (error) setError(null);
   };
 
@@ -95,7 +100,7 @@ const SendToDesignerModal: React.FC<SendToDesignerModalProps> = ({ isOpen, onClo
 
   const validateForm = () => {
     if (selectedDesigners.length === 0) {
-      setError('Please select a designer');
+      setError('Please select at least one designer');
       return false;
     }
     return true;
@@ -109,62 +114,49 @@ const SendToDesignerModal: React.FC<SendToDesignerModalProps> = ({ isOpen, onClo
     setError(null);
 
     try {
-      const selectedDesigner = selectedDesigners[0];
-
-      // Update the customer project with assigned_designer_id
-      // Set status to 'shared' for first-time assignment
-      // Status will change to 'assigned' when customer accepts a quote
       const { error: updateError } = await supabase
         .from('customers')
-        .update({
-          assigned_designer_id: selectedDesigner.id,
-          assignment_status: 'shared'
-        })
+        .update({ assignment_status: 'shared' })
         .eq('id', project.id)
-        .eq('user_id', user.id); // Security: ensure user owns the project
+        .eq('user_id', user.id);
 
       if (updateError) throw updateError;
 
-      // Insert into project_shares so the designer's RLS policy
-      // (has_project_share_access) can see the project
-      const { error: shareError } = await supabase
+      const { data: existingShares, error: existingError } = await supabase
         .from('project_shares')
-        .insert({
-          project_id: project.id,
-          customer_id: user.id,
-          designer_email: selectedDesigner.email,
-          designer_id: selectedDesigner.id,
-          message: message || null,
-          status: 'shared'
-        });
+        .select('designer_email')
+        .eq('project_id', project.id);
+      if (existingError) throw existingError;
+      const alreadyShared = new Set((existingShares || []).map((row) => row.designer_email));
 
-      if (shareError) {
-        console.error('Error creating project share record:', shareError);
+      const newDesigners = selectedDesigners.filter((designer) => designer.email && !alreadyShared.has(designer.email));
+      if (newDesigners.length > 0) {
+        const { error: shareError } = await supabase
+          .from('project_shares')
+          .insert(newDesigners.map((designer) => ({
+            project_id: project.id,
+            customer_id: user.id,
+            designer_email: designer.email,
+            message: message || null,
+            status: 'shared',
+          })));
+        if (shareError) throw shareError;
       }
 
-      // Fetch the designer's user_id to send them a notification
-      const { data: designerRecord, error: designerFetchError } = await supabase
-        .from('designers')
-        .select('user_id')
-        .eq('id', selectedDesigner.id)
-        .maybeSingle();
-
-      if (!designerFetchError && designerRecord?.user_id) {
-        const { error: notifError } = await supabase
-          .from('notifications')
-          .insert({
-            user_id: designerRecord.user_id,
-            user_type: 'designer',
-            title: 'New Project Shared With You',
-            message: `A customer has shared their project "${project.project_name}" with you. Check your Shared Projects to view details and create a quote.`,
-            type: 'project_shared',
-            reference_id: project.id,
-            reference_type: 'project'
-          });
-
-        if (notifError) {
-          console.error('Error creating designer notification:', notifError);
-        }
+      const notifications = selectedDesigners
+        .filter((designer) => designer.user_id)
+        .map((designer) => ({
+          user_id: designer.user_id,
+          user_type: 'designer',
+          title: 'New Project Shared With You',
+          message: `A customer has shared their project "${project.project_name}" with you. Check your Shared Projects to view details and create a quote.`,
+          type: 'project_shared',
+          reference_id: project.id,
+          reference_type: 'project',
+        }));
+      if (notifications.length > 0) {
+        const { error: notifError } = await supabase.from('notifications').insert(notifications);
+        if (notifError) console.error('Error creating designer notification:', notifError);
       }
 
       setSuccess(true);
@@ -221,7 +213,7 @@ const SendToDesignerModal: React.FC<SendToDesignerModalProps> = ({ isOpen, onClo
             </div>
             <h3 className="text-xl font-bold text-secondary-800 mb-2">Project Shared Successfully!</h3>
             <p className="text-gray-600">
-              The project has been shared with the selected designer. Once you accept their quote, the project will be assigned to them.
+              The project has been shared with the selected designers. It is assigned when you accept one of their quotes.
             </p>
           </div>
         ) : (
@@ -229,14 +221,14 @@ const SendToDesignerModal: React.FC<SendToDesignerModalProps> = ({ isOpen, onClo
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-secondary-800 mb-2">Project: {project.project_name}</h3>
               <p className="text-gray-600 text-sm">
-                Select a designer who has provided a quote to share your project with them. The project will be assigned once you accept their quote.
+                Select one or more designers. Each designer can prepare a quotation. The project is assigned when you accept one quote.
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Designer to Share With *
+                  Select Designers to Share With *
                 </label>
 
                 {selectedDesigners.length > 0 && (
@@ -279,7 +271,7 @@ const SendToDesignerModal: React.FC<SendToDesignerModalProps> = ({ isOpen, onClo
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 flex items-center justify-between hover:border-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50"
                   >
                     <span className="text-gray-700">
-                      {fetchingDesigners ? 'Loading designers...' : 'Choose a designer'}
+                      {fetchingDesigners ? 'Loading designers...' : selectedDesigners.length > 0 ? `${selectedDesigners.length} selected` : 'Choose designers'}
                     </span>
                     <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
                   </button>
@@ -316,7 +308,7 @@ const SendToDesignerModal: React.FC<SendToDesignerModalProps> = ({ isOpen, onClo
                               )}
                               <div className="flex-1 min-w-0">
                                 <div className="font-medium text-gray-900 truncate">{designer.name}</div>
-                                <div className="text-sm text-gray-500 truncate">{designer.location}</div>
+                                <div className="text-sm text-gray-500 truncate">{formatDesignerArea(designer.location, designer.sublocation)}</div>
                                 <div className="text-xs text-gray-400 truncate">{designer.specialization}</div>
                               </div>
                               {isSelected && (

@@ -241,14 +241,34 @@ interface Quote {
         setProjectQuotes(quotesMap);
       }
 
-      // Fetch shared projects (projects where assigned_designer_id is set and status is 'shared')
+      // Shared projects are either assigned to this designer or sent through project_shares.
       console.log('Fetching shared projects...');
-      const { data: sharedData, error: sharedError } = await supabase
-        .from('customers')
-        .select('*')
-        .eq('assigned_designer_id', designer.id)
-        .eq('assignment_status', 'shared')
-        .order('created_at', { ascending: false });
+      const [{ data: assignedShared, error: sharedError }, { data: shareRows, error: shareListError }] = await Promise.all([
+        supabase
+          .from('customers')
+          .select('*')
+          .eq('assigned_designer_id', designer.id)
+          .eq('assignment_status', 'shared')
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('project_shares')
+          .select('project_id')
+          .eq('designer_email', designer.email),
+      ]);
+      const sharedIds = new Set((assignedShared || []).map((project) => project.id));
+      const extraIds = [...new Set((shareRows || []).map((row) => row.project_id).filter((id): id is string => Boolean(id) && !sharedIds.has(id)))];
+      let extraShared: typeof assignedShared = [];
+      if (extraIds.length > 0) {
+        const { data: extraRows, error: extraError } = await supabase
+          .from('customers')
+          .select('*')
+          .in('id', extraIds)
+          .eq('assignment_status', 'shared');
+        if (extraError) console.error('Error fetching shared project rows:', extraError);
+        else extraShared = extraRows || [];
+      }
+      const sharedData = [...(assignedShared || []), ...(extraShared || [])];
+      if (shareListError) console.error('Error fetching project shares:', shareListError);
 
       console.log('Shared projects query result:', { sharedData, sharedError });
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { CheckCircle, Clock, IndianRupee as Rupee, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import PaymentOptionsModal from './payments/PaymentOptionsModal';
+import BankTransferReview from './payments/BankTransferReview';
 
 interface AdvanceRow {
   id: string;
@@ -55,6 +56,7 @@ async function readInvokeError(error: unknown, data: { error?: string } | null):
 const methodLabel = (method: string | null) => {
   if (method === 'upi') return 'UPI';
   if (method === 'razorpay') return 'Razorpay';
+  if (method === 'bank') return 'NEFT / RTGS';
   return '';
 };
 
@@ -105,6 +107,7 @@ export default function BillPaymentsSection({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [paying, setPaying] = useState<RequestRow | null>(null);
+  const [bankProofs, setBankProofs] = useState<Record<string, { utr: string | null; path: string | null; amount: number }>>({});
 
   const load = async () => {
     const [advanceResult, requestResult] = await Promise.all([
@@ -122,7 +125,29 @@ export default function BillPaymentsSection({
         .order('created_at', { ascending: true }),
     ]);
     if (!advanceResult.error) setAdvances(advanceResult.data || []);
-    if (!requestResult.error) setRequests(requestResult.data || []);
+    const nextRequests = requestResult.error ? [] : (requestResult.data || []);
+    if (!requestResult.error) setRequests(nextRequests);
+    if (mode === 'designer') {
+      const ids = nextRequests.filter((row) => row.status === 'awaiting_review' && row.payment_order_id).map((row) => row.payment_order_id);
+      if (ids.length === 0) {
+        setBankProofs({});
+      } else {
+        const { data: proofs } = await supabase
+          .from('payment_orders')
+          .select('id, base_amount, upi_transaction_id, upi_screenshot_path, method')
+          .in('id', ids)
+          .eq('method', 'bank');
+        const next: Record<string, { utr: string | null; path: string | null; amount: number }> = {};
+        (proofs || []).forEach((proof) => {
+          next[proof.id] = {
+            utr: proof.upi_transaction_id,
+            path: proof.upi_screenshot_path,
+            amount: Number(proof.base_amount),
+          };
+        });
+        setBankProofs(next);
+      }
+    }
     setLoading(false);
   };
 
@@ -230,9 +255,24 @@ export default function BillPaymentsSection({
                   </button>
                 )}
                 {mode === 'customer' && row.status === 'awaiting_review' && (
-                  <p className="text-xs text-amber-700 mt-1">Waiting for the designer to confirm your UPI payment.</p>
+                  <p className="text-xs text-amber-700 mt-1">Waiting for the designer to confirm your payment.</p>
                 )}
-                {mode === 'designer' && row.status === 'awaiting_review' && row.payment_order_id && (
+                {mode === 'designer' && row.status === 'awaiting_review' && row.payment_order_id && bankProofs[row.payment_order_id] && (
+                  <div className="mt-2">
+                    <BankTransferReview
+                      paymentOrderId={row.payment_order_id}
+                      amount={bankProofs[row.payment_order_id].amount}
+                      utr={bankProofs[row.payment_order_id].utr}
+                      screenshotPath={bankProofs[row.payment_order_id].path}
+                      onDecided={(action) => {
+                        setMessage(action === 'approve' ? 'Bank transfer confirmed and applied to the bill.' : 'Bank transfer was rejected. The customer can submit it again.');
+                        load();
+                        onUpdated?.();
+                      }}
+                    />
+                  </div>
+                )}
+                {mode === 'designer' && row.status === 'awaiting_review' && row.payment_order_id && !bankProofs[row.payment_order_id] && (
                   <div className="flex gap-2 mt-2">
                     <button
                       disabled={busy}
