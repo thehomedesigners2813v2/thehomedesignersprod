@@ -10,6 +10,7 @@ import {
   CheckCircle,
   AlertCircle,
   DollarSign,
+  IndianRupee,
   Eye,
   MessageSquare,
   Award,
@@ -1051,7 +1052,7 @@ const DesignerDashboard = () => {
                 <p className="text-3xl font-bold text-secondary-800">{formatCurrency(stats.totalRevenue)}</p>
               </div>
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <DollarSign className="w-6 h-6 text-green-600" />
+                <IndianRupee className="w-6 h-6 text-green-600" />
               </div>
             </div>
             <div className="mt-4 flex items-center text-sm">

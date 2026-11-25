@@ -77,8 +77,7 @@ export default function WallpaperOrder() {
 
   const validPincodes = [
     ...Array.from({ length: 60 }, (_, i) => (411001 + i).toString()),
-    '411017', '411018', '411019', '411033', '411044', '411057', '411058', '411059', '411060', '411061', '411062',
-    ...Array.from({ length: 104 }, (_, i) => (400001 + i).toString())
+    '411017', '411018', '411019', '411033', '411044', '411057', '411058', '411059', '411060', '411061', '411062'
   ];
 
   useEffect(() => {
@@ -219,19 +218,12 @@ export default function WallpaperOrder() {
       return false;
     }
     if (!validPincodes.includes(cleaned)) {
-      setPincodeError('Service available only in Pune (411001-411060) and Mumbai (400001-400104)');
+      setPincodeError('Service available only in Pune (411001-411062)');
       return false;
     }
-    // Validate that pincode matches selected city
-    const selectedCity = city || formData.customer_city;
-    const isPunePin = parseInt(cleaned) >= 411001 && parseInt(cleaned) <= 411061;
-    const isMumbaiPin = parseInt(cleaned) >= 400001 && parseInt(cleaned) <= 400104;
-    if (selectedCity.toLowerCase() === 'pune' && !isPunePin) {
-      setPincodeError('This pincode does not belong to Pune. Please enter a valid Pune pincode (411001-411060)');
-      return false;
-    }
-    if (selectedCity.toLowerCase() === 'mumbai' && !isMumbaiPin) {
-      setPincodeError('This pincode does not belong to Mumbai. Please enter a valid Mumbai pincode (400001-400104)');
+    const selectedCity = (city || formData.customer_city).toLowerCase();
+    if (selectedCity !== 'pune') {
+      setPincodeError('Service available only in Pune (411001-411062)');
       return false;
     }
     setPincodeError('');
@@ -266,13 +258,13 @@ export default function WallpaperOrder() {
     }
 
     if (!validatePincode(formData.customer_pincode)) {
-      alert('Please enter a valid pincode from Pune or Mumbai area');
+      alert('Please enter a valid Pune pincode');
       return;
     }
 
     const cityLower = formData.customer_city.toLowerCase();
-    if (cityLower !== 'pune' && cityLower !== 'mumbai') {
-      alert('Service is currently available only in Pune and Mumbai, Maharashtra');
+    if (cityLower !== 'pune') {
+      alert('Service is currently available only in Pune, Maharashtra');
       return;
     }
 
@@ -397,12 +389,12 @@ export default function WallpaperOrder() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">3D Wallpaper Orders</h1>
-          <p className="text-gray-600 mb-6">Order custom 3D wallpapers for your space in Pune & Mumbai, Maharashtra</p>
+          <p className="text-gray-600 mb-6">Order custom 3D wallpapers for your space in Pune, Maharashtra</p>
 
           <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
             <h3 className="font-semibold text-orange-900 mb-2">Service Location</h3>
             <p className="text-sm text-orange-800">
-              Currently available only in Pune & Mumbai, Maharashtra, India
+              Currently available only in Pune, Maharashtra, India
             </p>
           </div>
 
@@ -576,20 +568,14 @@ export default function WallpaperOrder() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     City <span className="text-red-500">*</span>
                   </label>
-                  <select
+                  <input
+                    type="text"
                     required
                     value={formData.customer_city}
-                    onChange={(e) => {
-                      const newCity = e.target.value;
-                      setFormData({ ...formData, customer_city: newCity });
-                      if (formData.customer_pincode) validatePincode(formData.customer_pincode, newCity);
-                    }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="Pune">Pune</option>
-                    <option value="Mumbai">Mumbai</option>
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">Service available in Pune and Mumbai</p>
+                    readOnly
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Service available in Pune only</p>
                 </div>
 
                 <div>
@@ -624,7 +610,7 @@ export default function WallpaperOrder() {
                   {pincodeError ? (
                     <p className="mt-1 text-sm text-red-600">{pincodeError}</p>
                   ) : (
-                    <p className="mt-1 text-xs text-gray-500">Valid for Pune (411001-411060) and Mumbai (400001-400104)</p>
+                    <p className="mt-1 text-xs text-gray-500">Valid for Pune (411001-411062)</p>
                   )}
                 </div>
               </div>
