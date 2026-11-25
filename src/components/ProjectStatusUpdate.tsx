@@ -34,6 +34,9 @@ const ProjectStatusUpdate: React.FC<ProjectStatusUpdateProps> = ({
     billSettled: false,
     fullyUpdated: false
   });
+  const [showFinalizePrompt, setShowFinalizePrompt] = useState(false);
+  const [approvalWaiting, setApprovalWaiting] = useState(false);
+  const [designLoaded, setDesignLoaded] = useState(false);
   const [completionDetails, setCompletionDetails] = useState<CompletionDetails>({
     challenges_solutions: '',
     project_timeline_details: '',
@@ -43,11 +46,12 @@ const ProjectStatusUpdate: React.FC<ProjectStatusUpdateProps> = ({
   useEffect(() => {
     let active = true;
     const loadCompletionReady = async () => {
-      const [billResult, advanceResult, paymentResult, updateResult] = await Promise.all([
+      const [billResult, advanceResult, paymentResult, updateResult, designResult] = await Promise.all([
         supabase.from('project_bills').select('total_amount').eq('project_id', projectId),
         supabase.from('quote_advance_payments').select('amount').eq('project_id', projectId).eq('status', 'paid'),
         supabase.from('project_payment_requests').select('amount').eq('project_id', projectId).eq('status', 'paid'),
-        supabase.from('project_updates').select('id').eq('project_id', projectId).gte('completion_percentage', 100).limit(1)
+        supabase.from('project_updates').select('id').eq('project_id', projectId).gte('completion_percentage', 100).limit(1),
+        supabase.from('project_design_submissions').select('status').eq('project_id', projectId)
       ]);
       if (!active) return;
       const billTotal = (billResult.data || []).reduce((sum, row) => sum + Number(row.total_amount || 0), 0);
@@ -58,6 +62,9 @@ const ProjectStatusUpdate: React.FC<ProjectStatusUpdateProps> = ({
         billSettled: billTotal > 0 && received + 0.01 >= billTotal,
         fullyUpdated: (updateResult.data || []).length > 0
       });
+      const designRows = designResult.data || [];
+      setApprovalWaiting(designRows.some((row) => row.status === 'pending_approval'));
+      setDesignLoaded(true);
     };
     loadCompletionReady();
     return () => {
@@ -127,16 +134,17 @@ const ProjectStatusUpdate: React.FC<ProjectStatusUpdateProps> = ({
 
     try {
       // Update the project status
-      const { error } = await supabase
-        .from('customers')
-        .update({
-          assignment_status: newStatus,
-          last_modified_by: user.id
-        })
-        .eq('id', projectId)
-        .eq('assigned_designer_id', designer.id);
+      const { data: updatedStatus, error } = await supabase.rpc('designer_update_project_status', {
+        p_project_id: projectId,
+        p_status: newStatus
+      });
+      const updated = error || !updatedStatus ? [] : [{ assignment_status: updatedStatus as string }];
 
       if (error) throw error;
+      if (!updated || updated.length === 0) {
+        setError('The status could not be changed.');
+        return;
+      }
 
       setSuccess(`Project status updated to ${newStatus}`);
       onStatusUpdate();
@@ -188,17 +196,13 @@ const ProjectStatusUpdate: React.FC<ProjectStatusUpdateProps> = ({
 
     try {
       // Update the project status along with completion details
-      const { error } = await supabase
-        .from('customers')
-        .update({
-          assignment_status: 'completed',
-          last_modified_by: user.id,
-          challenges_solutions: completionDetails.challenges_solutions,
-          project_timeline_details: completionDetails.project_timeline_details,
-          materials_cost_breakdown: completionDetails.materials_cost_breakdown
-        })
-        .eq('id', projectId)
-        .eq('assigned_designer_id', designer.id);
+      const { error } = await supabase.rpc('designer_update_project_status', {
+        p_project_id: projectId,
+        p_status: 'completed',
+        p_challenges_solutions: completionDetails.challenges_solutions,
+        p_project_timeline_details: completionDetails.project_timeline_details,
+        p_materials_cost_breakdown: completionDetails.materials_cost_breakdown
+      });
 
       if (error) throw error;
 
@@ -253,6 +257,7 @@ const ProjectStatusUpdate: React.FC<ProjectStatusUpdateProps> = ({
         <div className="flex flex-wrap gap-2">
           {statusOptions.map((status) => {
             const lockedComplete = status.value === 'completed' && currentStatus !== 'completed' && !canComplete;
+            const lockedFinalized = false;
             const disabled = loading || status.value === currentStatus || isStatusDisabled(status.value);
             return (
             <button
@@ -264,13 +269,24 @@ const ProjectStatusUpdate: React.FC<ProjectStatusUpdateProps> = ({
                   setError(completionBlockMessage());
                   return;
                 }
+                if (lockedFinalized) {
+                  setSuccess(null);
+                  setError('Finalized stays unavailable until the homeowner approves the latest design.');
+                  return;
+                }
+                if (status.value === 'finalized' && currentStatus === 'pending') {
+                  setSuccess(null);
+                  setError(null);
+                  setShowFinalizePrompt(true);
+                  return;
+                }
                 handleStatusChange(status.value);
               }}
-              disabled={disabled && !lockedComplete}
+              disabled={disabled && !lockedComplete && !lockedFinalized}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 status.value === currentStatus
                   ? `${status.color} border border-current`
-                  : isStatusDisabled(status.value) || lockedComplete
+                  : isStatusDisabled(status.value) || lockedComplete || lockedFinalized
                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-50'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -298,6 +314,13 @@ const ProjectStatusUpdate: React.FC<ProjectStatusUpdateProps> = ({
             </div>
           )}
 
+          {currentStatus === 'pending' && designLoaded && approvalWaiting && (
+            <div className="flex items-start space-x-2 text-amber-700 bg-amber-50 p-3 rounded-lg mt-3">
+              <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <p>Some documents are still waiting for the customer to confirm them. You will be asked before this project moves to Finalized.</p>
+            </div>
+          )}
+
           {['finalized', 'in_progress'].includes(currentStatus) && (
             <div className="flex items-start space-x-2 text-blue-600 bg-blue-50 p-3 rounded-lg mt-3">
               <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
@@ -309,6 +332,20 @@ const ProjectStatusUpdate: React.FC<ProjectStatusUpdateProps> = ({
           )}
         </div>
       </div>
+
+      {/* Finalize confirmation */}
+      {showFinalizePrompt && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-secondary-800">{approvalWaiting ? 'Documents are not all confirmed' : 'Is Everything Finalized'}</h3>
+            <p className="mt-3 text-sm text-gray-600">{approvalWaiting ? 'The customer has not confirmed every document yet. You can still finalize, but after Finalized this project cannot return to Pending or Assigned.' : 'You can still finalize, but after Finalized this project cannot return to Pending or Assigned.'}</p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button type="button" onClick={() => setShowFinalizePrompt(false)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700">Stay pending</button>
+              <button type="button" onClick={() => { setShowFinalizePrompt(false); void handleStatusChange('finalized'); }} className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white">Finalize anyway</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Completion Details Modal */}
       {showCompletionModal && (

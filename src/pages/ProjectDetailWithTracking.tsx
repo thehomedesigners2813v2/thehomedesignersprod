@@ -9,6 +9,7 @@ import type { Customer } from '../lib/supabase';
 import ProjectUpdateForm from '../components/ProjectUpdateForm';
 import ProjectUpdates from '../components/ProjectUpdates';
 import ProjectStatusUpdate from '../components/ProjectStatusUpdate';
+import DesignApprovalPanel from '../components/DesignApprovalPanel';
 import ProjectTeamManagement from '../components/ProjectTeamManagement';
 import ProjectActivityLog from '../components/ProjectActivityLog';
 import ProjectVersionHistory from '../components/ProjectVersionHistory';
@@ -340,6 +341,20 @@ const ProjectDetailWithTracking = () => {
                     currentStatus={project.assignment_status || 'assigned'}
                     onStatusUpdate={handleStatusUpdate}
                     refreshTrigger={updateRefreshKey}
+                  />
+                )}
+
+                {(isAssignedDesigner || isProjectOwner) && project.assignment_status === 'pending' && (
+                  <DesignApprovalPanel
+                    projectId={project.id}
+                    projectName={project.project_name}
+                    projectStatus={project.assignment_status || 'assigned'}
+                    isAssignedDesigner={isAssignedDesigner}
+                    isProjectOwner={isProjectOwner}
+                    designerId={designer?.id}
+                    designerUserId={designer?.user_id}
+                    customerUserId={project.user_id}
+                    onDecided={handleStatusUpdate}
                   />
                 )}
                 

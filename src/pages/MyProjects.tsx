@@ -23,6 +23,7 @@ const MyProjects = () => {
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [acceptedQuotes, setAcceptedQuotes] = useState<any[]>([]);
   const [projectQuotes, setProjectQuotes] = useState<Record<string, any>>({});
+  const [confirmedProjects, setConfirmedProjects] = useState<Record<string, boolean>>({});
   const [projectHasQuotes, setProjectHasQuotes] = useState<Record<string, boolean>>({});
   const [projectHasFeedback, setProjectHasFeedback] = useState<Record<string, boolean>>({});
   const [paymentAsks, setPaymentAsks] = useState<Record<string, { id: string; amount: number; status: string }>>({});
@@ -103,6 +104,21 @@ const MyProjects = () => {
           setProjectQuotes(quotesMap);
         }
 
+        const { data: confirmedQuoteData } = await supabase
+          .from('designer_quotes')
+          .select('project_id')
+          .in('project_id', projectIds)
+          .eq('payment_status', 'verified');
+
+        const confirmedMap: Record<string, boolean> = {};
+        (quotesData || []).forEach(quote => {
+          confirmedMap[quote.project_id] = true;
+        });
+        (confirmedQuoteData || []).forEach(quote => {
+          confirmedMap[quote.project_id] = true;
+        });
+        setConfirmedProjects(confirmedMap);
+
         // Check for existing feedback/reviews
         const { data: reviewsData, error: reviewsError } = await supabase
           .from('reviews')
@@ -146,13 +162,18 @@ const MyProjects = () => {
     }
 
     try {
-      const { error } = await supabase
+      const { data: deleted, error } = await supabase
         .from('customers')
         .delete()
         .eq('id', projectId)
-        .eq('user_id', user?.id); // Extra security check
+        .eq('user_id', user?.id)
+        .select('id');
 
       if (error) throw error;
+      if (!deleted || deleted.length === 0) {
+        alert('This project can only be deleted by an administrator because the quotation is confirmed.');
+        return;
+      }
 
       // Re-fetch from DB to ensure state matches actual DB state
       await fetchProjects();
@@ -491,13 +512,15 @@ const MyProjects = () => {
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
-                      <button
-                        onClick={() => handleDeleteProject(project.id)}
-                        className="bg-red-500 hover:bg-red-600 text-white py-2 px-3 rounded-lg font-medium transition-colors"
-                        title="Delete Project"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {!confirmedProjects[project.id] && (
+                        <button
+                          onClick={() => handleDeleteProject(project.id)}
+                          className="bg-red-500 hover:bg-red-600 text-white py-2 px-3 rounded-lg font-medium transition-colors"
+                          title="Delete Project"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
 
                     {/* Action buttons based on project state */}

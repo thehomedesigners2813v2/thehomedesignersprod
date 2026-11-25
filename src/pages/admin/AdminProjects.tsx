@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Loader2, AlertTriangle, Search, FolderKanban, Eye, X } from 'lucide-react';
+import { Loader2, AlertTriangle, Search, FolderKanban, Eye, X, Trash2 } from 'lucide-react';
 
 const STATUS_COLORS: Record<string, string> = {
   new: 'bg-gray-100 text-gray-600',
@@ -38,6 +38,20 @@ const AdminProjects: React.FC = () => {
 
   useEffect(() => { fetchProjects(); }, [fetchProjects]);
 
+  const handleDeleteProject = async (project: { id: string; project_name?: string | null }) => {
+    const name = project.project_name || 'this project';
+    if (!confirm(`Delete "${name}"? Quotes, bills, and linked project records will be removed. This cannot be undone.`)) {
+      return;
+    }
+    const { error: deleteError } = await supabase.rpc('admin_delete_project', { p_project_id: project.id });
+    if (deleteError) {
+      alert(deleteError.message || 'The project could not be deleted.');
+      return;
+    }
+    if (selectedProject?.id === project.id) setSelectedProject(null);
+    await fetchProjects();
+  };
+
   const statuses = ['all', ...new Set(projects.map(p => p.status).filter(Boolean))];
 
   const filtered = projects.filter(p => {
@@ -63,7 +77,7 @@ const AdminProjects: React.FC = () => {
     <div className="p-6 lg:p-8 max-w-7xl mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Projects — Monitoring</h1>
-        <p className="text-gray-500 text-sm mt-1">Read-only view of all platform projects</p>
+        <p className="text-gray-500 text-sm mt-1">Homeowners cannot delete a project after the quotation is confirmed. Administrators can delete a project from this list.</p>
       </div>
 
       {/* Stats */}
@@ -135,10 +149,18 @@ const AdminProjects: React.FC = () => {
                       {p.created_at ? new Date(p.created_at).toLocaleDateString('en-IN') : '—'}
                     </td>
                     <td className="px-5 py-3">
-                      <button onClick={() => setSelectedProject(p)}
-                        className="p-1.5 text-gray-400 hover:text-sky-600 hover:bg-sky-50 rounded-md transition-colors">
-                        <Eye className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center justify-end gap-1">
+                        <button onClick={() => setSelectedProject(p)}
+                          className="p-1.5 text-gray-400 hover:text-sky-600 hover:bg-sky-50 rounded-md transition-colors"
+                          title="View project">
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleDeleteProject(p)}
+                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                          title="Delete project">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -175,8 +197,13 @@ const AdminProjects: React.FC = () => {
                 </div>
               ))}
             </div>
-            <div className="px-5 py-4 border-t border-gray-100 bg-amber-50/50">
-              <p className="text-xs text-amber-700">Read-only view. Admins cannot create, edit, or delete projects.</p>
+            <div className="px-5 py-4 border-t border-gray-100 flex items-center justify-between gap-3">
+              <p className="text-xs text-gray-500">A confirmed project can only be deleted by an administrator.</p>
+              <button onClick={() => handleDeleteProject(selectedProject)}
+                className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700">
+                <Trash2 className="w-4 h-4" />
+                Delete project
+              </button>
             </div>
           </div>
         </div>
