@@ -83,7 +83,11 @@ export default function Home() {
     navigate(`/designers${params.toString() ? `?${params.toString()}` : ''}`);
   };
 
+  // Turn back on after two days.
+  const quotationRequestsOpen = false;
+
   const handleProjectRegistration = () => {
+    if (!quotationRequestsOpen) return;
     if (user) navigate('/register-customer');
     else {
       setAuthMode('signup');
@@ -100,7 +104,7 @@ export default function Home() {
           <h1 className="mt-5 max-w-2xl font-serif text-4xl font-bold leading-[1.08] text-secondary-800 sm:text-5xl lg:text-6xl">Find the Right Interior Designer for Your Dream Home</h1>
           <p className="mt-6 max-w-xl text-lg leading-8 text-stone-700">Compare portfolios, explore offers and connect with interior designers—all in one place.</p>
           <div className="mt-8 max-w-md">
-            <button onClick={handleProjectRegistration} className="group flex min-h-20 w-full items-center justify-between rounded-xl bg-primary-600 px-5 py-4 text-left text-white shadow-lg shadow-primary-600/20 transition hover:-translate-y-0.5 hover:bg-primary-700"><span><span className="block font-semibold">Ask For Quotation</span><span className="mt-1 block text-sm text-white/80">Get quotes from verified designers</span></span><ArrowRight className="h-5 w-5 transition group-hover:translate-x-1" aria-hidden="true" /></button>
+            <button type="button" onClick={handleProjectRegistration} disabled={!quotationRequestsOpen} aria-disabled={!quotationRequestsOpen} className={`group flex min-h-20 w-full items-center justify-between rounded-xl px-5 py-4 text-left text-white shadow-lg ${quotationRequestsOpen ? 'bg-primary-600 shadow-primary-600/20 transition hover:-translate-y-0.5 hover:bg-primary-700' : 'cursor-not-allowed bg-primary-600/60 shadow-none'}`}><span><span className="block font-semibold">Ask For Quotation</span><span className="mt-1 block text-sm text-white/80">Get quotes from verified designers</span></span><ArrowRight className={`h-5 w-5 ${quotationRequestsOpen ? 'transition group-hover:translate-x-1' : ''}`} aria-hidden="true" /></button>
           </div>
         </div>
         <div className="relative min-h-[360px] overflow-hidden rounded-[2rem] shadow-2xl lg:min-h-[500px]">

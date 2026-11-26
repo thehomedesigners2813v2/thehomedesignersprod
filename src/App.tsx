@@ -18,7 +18,6 @@ import Chatbot from './components/Chatbot';
 import InstallPrompt from './components/InstallPrompt';
 import ProtectedDesignerRoute from './components/ProtectedDesignerRoute';
 import SubscriptionExpiredModal from './components/SubscriptionExpiredModal';
-import LaunchHold from './components/LaunchHold';
 
 import Home from './pages/Home';
 
@@ -574,11 +573,7 @@ const AppContent: React.FC = () => {
 };
 
 
-const LAUNCH_HOLD = true;
-
 function App() {
-  if (LAUNCH_HOLD) return <LaunchHold />;
-
   return (
     <AuthProvider>
       <Router>
