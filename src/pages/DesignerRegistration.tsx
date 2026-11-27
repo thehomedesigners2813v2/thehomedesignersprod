@@ -16,7 +16,7 @@ import {
   type CustomEntry
 } from '../lib/designerCatalog';
 import { DESIGNER_CITIES, sublocationsFor } from '../lib/designerLocations';
-import { bankDetailError, normalizeBankDetails } from '../lib/bankDetails';
+import { bankDetailError, bankDetailsAreBlank, normalizeBankDetails } from '../lib/bankDetails';
 
 const DesignerRegistration = () => {
   const navigate = useNavigate();
@@ -545,14 +545,19 @@ const DesignerRegistration = () => {
         if (result.error) {
           throw new Error(result.error);
         }
-        const { error: bankError } = await supabase.from('designer_bank_accounts').upsert({
-          designer_id: designer.id,
-          account_holder: bankDetails.bank_account_holder,
-          account_number: bankDetails.bank_account_number,
-          ifsc: bankDetails.bank_ifsc,
-          updated_at: new Date().toISOString(),
-        });
-        if (bankError) throw new Error(bankError.message);
+        if (bankDetailsAreBlank(bankDetails.bank_account_holder, bankDetails.bank_account_number, bankDetails.bank_ifsc)) {
+          const { error: bankError } = await supabase.from('designer_bank_accounts').delete().eq('designer_id', designer.id);
+          if (bankError) throw new Error(bankError.message);
+        } else {
+          const { error: bankError } = await supabase.from('designer_bank_accounts').upsert({
+            designer_id: designer.id,
+            account_holder: bankDetails.bank_account_holder,
+            account_number: bankDetails.bank_account_number,
+            ifsc: bankDetails.bank_ifsc,
+            updated_at: new Date().toISOString(),
+          });
+          if (bankError) throw new Error(bankError.message);
+        }
 
         setSuccess('Profile updated successfully!');
 
@@ -940,12 +945,12 @@ const DesignerRegistration = () => {
 
                   <div className="md:col-span-2">
                     <h3 className="text-sm font-semibold text-gray-800">Bank account for customer payments</h3>
-                    <p className="mt-1 text-xs text-gray-500">Customers paying by NEFT or RTGS will see these details. They are not shown on your public profile.</p>
+                    <p className="mt-1 text-xs text-gray-500">Optional. Add these now, or later from Edit Profile. Customers paying by NEFT or RTGS will see them. They are not shown on your public profile.</p>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Account holder name *
+                      Account holder name
                     </label>
                     <input
                       type="text"
@@ -955,13 +960,12 @@ const DesignerRegistration = () => {
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       placeholder="Name on the bank account"
                       maxLength={80}
-                      required
                     />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Account number *
+                      Account number
                     </label>
                     <input
                       type="text"
@@ -972,13 +976,12 @@ const DesignerRegistration = () => {
                       placeholder="9 to 18 digits"
                       inputMode="numeric"
                       maxLength={18}
-                      required
                     />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      IFSC code *
+                      IFSC code
                     </label>
                     <input
                       type="text"
@@ -988,7 +991,6 @@ const DesignerRegistration = () => {
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 uppercase focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       placeholder="HDFC0001234"
                       maxLength={11}
-                      required
                     />
                   </div>
 
@@ -1266,6 +1268,7 @@ const DesignerRegistration = () => {
                   selectedIds={serviceIds}
                   custom={customServices}
                   customLabel="Add custom service"
+                  variant="service"
                   onUploadImage={stageOrUploadCatalogImage}
                   onChange={(ids, custom) => { setServiceIds(ids); setCustomServices(custom); }}
                 />
@@ -1279,6 +1282,7 @@ const DesignerRegistration = () => {
                   selectedIds={materialIds}
                   custom={customMaterials}
                   customLabel="Add custom material"
+                  variant="material"
                   onUploadImage={stageOrUploadCatalogImage}
                   onChange={(ids, custom) => { setMaterialIds(ids); setCustomMaterials(custom); }}
                 />

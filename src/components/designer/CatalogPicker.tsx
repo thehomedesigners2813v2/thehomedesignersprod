@@ -9,6 +9,7 @@ interface CatalogPickerProps {
   categories?: string[];
   onChange: (selectedIds: string[], custom: CustomEntry[]) => void;
   customLabel: string;
+  variant?: 'service' | 'material';
   onUploadImage?: (file: File) => Promise<string | null>;
 }
 
@@ -19,6 +20,7 @@ export default function CatalogPicker({
   categories,
   onChange,
   customLabel,
+  variant = 'service',
   onUploadImage
 }: CatalogPickerProps) {
   const [query, setQuery] = useState('');
@@ -80,7 +82,7 @@ export default function CatalogPicker({
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className={variant === 'material' ? 'grid gap-3 sm:grid-cols-2 lg:grid-cols-3' : 'grid gap-3 sm:grid-cols-2'}>
         {visible.map((item) => {
           const selected = selectedIds.includes(item.id);
           return (
@@ -88,18 +90,21 @@ export default function CatalogPicker({
               key={item.id}
               type="button"
               onClick={() => toggle(item.id)}
-              className={`overflow-hidden rounded-2xl border bg-white text-left shadow-sm ${selected ? 'border-[#D96C4D] ring-2 ring-[#D96C4D]' : 'border-stone-200'}`}
+              className={`flex items-center gap-3 rounded-2xl border bg-white text-left ${variant === 'material' ? 'p-2.5' : 'p-3'} ${selected ? 'border-[#D96C4D] ring-2 ring-[#D96C4D]' : 'border-stone-200'}`}
             >
-              <img src={item.image} alt={item.name} loading="lazy" className="h-36 w-full object-cover" />
-              <div className="flex items-start gap-3 p-4">
-                <span className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border ${selected ? 'border-[#D96C4D] bg-[#D96C4D] text-white' : 'border-gray-300'}`}>
-                  {selected && <Check className="h-3.5 w-3.5" />}
-                </span>
-                <span>
-                  <span className="block font-semibold text-[#172B45]">{item.name}</span>
-                  <span className="mt-1 block text-sm text-gray-600">{item.description}</span>
-                </span>
-              </div>
+              <img
+                src={item.image}
+                alt=""
+                loading="lazy"
+                className={variant === 'material' ? 'h-12 w-12 shrink-0 rounded-lg object-cover' : 'h-14 w-14 shrink-0 rounded-xl object-cover'}
+              />
+              <span className="min-w-0 flex-1">
+                <span className={`block font-semibold text-[#172B45] ${variant === 'material' ? 'text-sm' : ''}`}>{item.name}</span>
+                {variant === 'service' && <span className="mt-1 block text-sm text-gray-600">{item.description}</span>}
+              </span>
+              <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${selected ? 'border-[#D96C4D] bg-[#D96C4D] text-white' : 'border-gray-300'}`}>
+                {selected && <Check className="h-3.5 w-3.5" />}
+              </span>
             </button>
           );
         })}
