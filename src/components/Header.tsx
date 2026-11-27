@@ -40,13 +40,16 @@ const Header = () => {
       };
     }, []);
 
+  // Turn back on when 3D wallpaper orders reopen.
+  const wallpaperMenuOpen = false;
+
   const navigation = [
     { name: 'Home', href: '/', icon: HomeIcon },
     { name: 'Designers', href: '/designers' },
     { name: 'Projects', href: '/projects' },
     { name: 'Offers & Deals', href: '/deals' },
     { name: 'Materials', href: '/materials' },
-    { name: '3D Wallpaper', href: '/3d-wallpaper' },
+    ...(wallpaperMenuOpen ? [{ name: '3D Wallpaper', href: '/3d-wallpaper' }] : []),
   ].filter((item) => item.href !== '/deals' || !isDesigner || isProfessional);
 
   const isActive = (path: string) => location.pathname === path;

@@ -65,9 +65,9 @@ const AdminOverview: React.FC = () => {
         supabase.from('customers').select('id, status, created_at'),
         supabase.from('customers').select('id, status, created_at, project_name, name, email'),
         supabase.from('designer_quotes').select('id, status, created_at'),
-        supabase.from('designer_subscriptions').select('id, status, end_date'),
-        supabase.from('designer_ai_subscriptions').select('id, status, end_date'),
-        supabase.from('subscription_payments').select('id, amount, status, created_at'),
+        supabase.from('designer_subscriptions').select('id, status, subscription_end_date'),
+        supabase.from('designer_ai_subscriptions').select('id, status, subscription_end_date'),
+        supabase.from('subscription_payments').select('id, amount, payment_status, created_at'),
         supabase.from('ai_quotation_jobs').select('id, status, created_at, error_message'),
         supabase.from('ai_credit_ledger').select('amount, event_type, created_at'),
       ]);
@@ -84,8 +84,8 @@ const AdminOverview: React.FC = () => {
 
       const activeSubs = subs.filter(s => s.status === 'active');
       const activeAISubs = aiSubs.filter(s => s.status === 'active');
-      const successfulPayments = payments.filter(p => p.status === 'success' || p.status === 'paid' || p.status === 'completed');
-      const failedPayments = payments.filter(p => p.status === 'failed' || p.status === 'cancelled');
+      const successfulPayments = payments.filter(p => p.payment_status === 'completed');
+      const failedPayments = payments.filter(p => p.payment_status === 'failed');
       const recentJobs = aiJobs.filter(j => new Date(j.created_at) >= new Date(since));
       const recentLedger = ledger.filter(l => new Date(l.created_at) >= new Date(since));
 

@@ -12,7 +12,11 @@ const AdminPlatformSettings: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const { data, error: err } = await supabase.from('site_settings').select('*').maybeSingle();
+      const { data, error: err } = await supabase
+        .from('site_settings')
+        .select('*')
+        .eq('setting_key', 'subscription_management_enabled')
+        .maybeSingle();
       if (err) throw err;
       setSettings(data);
     } catch (e: any) {
