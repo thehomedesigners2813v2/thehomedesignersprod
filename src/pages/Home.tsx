@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Award, CheckCircle2, ClipboardList, Home as HomeIcon, MessageSquareQuote, Search, Star, Users, UserRound } from 'lucide-react';
+import { ArrowRight, Award, CheckCircle2, ClipboardList, Home as HomeIcon, Mail, MessageSquareQuote, Phone, Search, Star, Users, UserRound, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { supabase, type Designer } from '../lib/supabase';
 import AuthModal from '../components/AuthModal';
@@ -40,6 +40,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showDemoContact, setShowDemoContact] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup');
 
   useEffect(() => {
@@ -131,8 +132,24 @@ export default function Home() {
 
       {reviews.length > 0 && <section className="bg-white py-16"><div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"><div className="flex items-end justify-between gap-6"><div><p className="text-sm font-bold uppercase tracking-[0.2em] text-primary-600">Real experiences</p><h2 className="mt-2 font-serif text-3xl font-bold text-secondary-800 sm:text-4xl">What Homeowners Say</h2></div><div className="hidden items-center gap-2 text-sm font-semibold text-amber-600 sm:flex"><Star className="h-5 w-5 fill-current" aria-hidden="true" /> Verified marketplace reviews</div></div><div className="mt-8 grid gap-6 md:grid-cols-3">{reviews.map((review) => <article key={review.id} className="rounded-2xl border border-stone-200 bg-[#fcfaf7] p-6"><div className="flex gap-1 text-amber-500">{[1, 2, 3, 4, 5].map((star) => <Star key={star} className={`h-4 w-4 ${star <= review.rating ? 'fill-current' : ''}`} aria-hidden="true" />)}</div><p className="mt-5 text-sm leading-7 text-stone-700">“{review.comment || review.title || 'A positive experience with a marketplace designer.'}”</p><div className="mt-6 flex items-center gap-3 border-t border-stone-200 pt-4"><div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-100 text-primary-700"><UserRound className="h-4 w-4" aria-hidden="true" /></div><div><p className="text-sm font-semibold text-secondary-800">Verified homeowner</p><p className="text-xs text-stone-500">{new Date(review.created_at).toLocaleDateString()}</p></div><CheckCircle2 className="ml-auto h-4 w-4 text-emerald-600" aria-label="Verified review" /></div></article>)}</div></div></section>}
 
-      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8"><div className="relative overflow-hidden rounded-3xl bg-secondary-800 px-6 py-10 text-white sm:px-12"><div className="relative z-10 flex flex-col items-start justify-between gap-8 lg:flex-row lg:items-center"><div><p className="text-sm font-bold uppercase tracking-[0.2em] text-primary-300">For interior designers</p><h2 className="mt-3 max-w-2xl font-serif text-3xl font-bold sm:text-4xl">Grow your design business with the right homeowners.</h2><p className="mt-3 max-w-2xl text-white/75">Showcase your portfolio, share your offers and connect with homeowners who are ready to create.</p></div><Link to="/register-designer" className="group inline-flex shrink-0 items-center gap-3 rounded-xl bg-primary-600 px-6 py-4 font-semibold text-white transition hover:bg-primary-500">Join as a Designer <ArrowRight className="h-5 w-5 transition group-hover:translate-x-1" aria-hidden="true" /></Link></div><div className="absolute -right-8 -top-16 h-64 w-64 rounded-full border border-white/10" /><div className="absolute -bottom-24 right-24 h-64 w-64 rounded-full border border-white/10" /></div></section>
+      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8"><div className="relative overflow-hidden rounded-3xl bg-secondary-800 px-6 py-10 text-white sm:px-12"><div className="relative z-10 flex flex-col items-start justify-between gap-8 lg:flex-row lg:items-center"><div><p className="text-sm font-bold uppercase tracking-[0.2em] text-primary-300">For interior designers</p><h2 className="mt-3 max-w-2xl font-serif text-3xl font-bold sm:text-4xl">Grow your design business with the right homeowners.</h2><p className="mt-3 max-w-2xl text-white/75">Showcase your portfolio, share your offers and connect with homeowners who are ready to create.</p></div><div className="flex shrink-0 flex-col items-stretch gap-3"><button type="button" onClick={() => setShowDemoContact(true)} className="inline-flex items-center justify-center gap-3 rounded-xl border border-white/30 bg-white/10 px-6 py-4 font-semibold text-white transition hover:bg-white/20">Need a Demo?</button><Link to="/register-designer" className="group inline-flex shrink-0 items-center justify-center gap-3 rounded-xl bg-primary-600 px-6 py-4 font-semibold text-white transition hover:bg-primary-500">Join as a Designer <ArrowRight className="h-5 w-5 transition group-hover:translate-x-1" aria-hidden="true" /></Link></div></div><div className="absolute -right-8 -top-16 h-64 w-64 rounded-full border border-white/10" /><div className="absolute -bottom-24 right-24 h-64 w-64 rounded-full border border-white/10" /></div></section>
     </main>
     <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} mode={authMode} onModeChange={setAuthMode} onAuthSuccess={() => navigate('/register-customer')} userType="customer" />
+    {showDemoContact && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowDemoContact(false)}>
+        <div role="dialog" aria-labelledby="demo-contact-title" className="w-full max-w-md rounded-2xl bg-white p-6 text-secondary-800 shadow-xl" onClick={(event) => event.stopPropagation()}>
+          <div className="flex items-start justify-between gap-4">
+            <h2 id="demo-contact-title" className="font-serif text-2xl font-bold">Need a Demo?</h2>
+            <button type="button" onClick={() => setShowDemoContact(false)} className="rounded-lg p-2 text-stone-500 hover:bg-stone-100" aria-label="Close"><X className="h-5 w-5" /></button>
+          </div>
+          <p className="mt-3 text-sm text-stone-600">Call either number, or send an email, and we will walk you through the platform.</p>
+          <div className="mt-5 space-y-3">
+            <a href="tel:8722263004" className="flex items-center gap-3 rounded-xl border border-stone-200 px-4 py-3 font-semibold hover:bg-stone-50"><Phone className="h-5 w-5 text-primary-600" aria-hidden="true" />8722263004</a>
+            <a href="tel:8329547818" className="flex items-center gap-3 rounded-xl border border-stone-200 px-4 py-3 font-semibold hover:bg-stone-50"><Phone className="h-5 w-5 text-primary-600" aria-hidden="true" />8329547818</a>
+            <a href="mailto:supportcontact@thehomedesigners.in" className="flex items-center gap-3 rounded-xl border border-stone-200 px-4 py-3 font-semibold hover:bg-stone-50"><Mail className="h-5 w-5 text-primary-600" aria-hidden="true" />supportcontact@thehomedesigners.in</a>
+          </div>
+        </div>
+      </div>
+    )}
   </div>;
 }
